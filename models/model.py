@@ -119,8 +119,9 @@ class TrainingLearningRateHook(session_run_hook.SessionRunHook):
             logging.info('Start epoch {}'.format(epoch))
             self._epoch = epoch
 
-        if epoch > 0:
-            desired_learning_rate = math.pow(self._initial_learning_rate, epoch)
+        lr_step = epoch//self._lr_step_size
+        if lr_step > 0:
+            desired_learning_rate = self._initial_learning_rate*math.pow(self._lr_gamma, lr_step)
         else:
             desired_learning_rate = self._initial_learning_rate
 
