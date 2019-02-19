@@ -102,3 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+fastmri-tf.iml
+.idea/
+test/
