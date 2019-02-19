@@ -5,6 +5,7 @@ import tensorflow as tf
 import numpy as np
 import sys
 
+
 def convert(o):
     if isinstance(o, np.int64): return int(o)
     if isinstance(o, np.int32): return int(o)
@@ -20,11 +21,12 @@ def convert(o):
     if isinstance(o, tf.float): return float(o)
     return None
 
+
 class MlBoardReporter(session_run_hook.SessionRunHook):
-    def __init__(self,tensors={},every_steps=None,every_n_secs=60):
+    def __init__(self, tensors={}, every_steps=None, every_n_secs=60):
         if every_steps is not None:
             every_n_secs = None
-        self._timer = tf.train.SecondOrStepTimer(every_steps=every_steps,every_secs=every_n_secs)
+        self._timer = tf.train.SecondOrStepTimer(every_steps=every_steps, every_secs=every_n_secs)
         try:
             from mlboardclient.api import client
         except ImportError:
@@ -50,8 +52,8 @@ class MlBoardReporter(session_run_hook.SessionRunHook):
                 "Global step should be created to use StepCounterHook.")
 
     def before_run(self, run_context):  # pylint: disable=unused-argument
-        requests = {}
-        for n,t in self._tensors.items():
+        requests = {"global_step": self._global_step_tensor}
+        for n, t in self._tensors.items():
             requests[n] = t
         self._generate = (
                 self._next_step is None or
@@ -70,14 +72,15 @@ class MlBoardReporter(session_run_hook.SessionRunHook):
             if self._generate and (self._next_step is not None):
                 self._timer.update_last_triggered_step(global_step)
                 rpt = {}
-                for k,v in run_values.results.items():
+                for k, v in run_values.results.items():
+                    if k == "global_step":
+                        continue
                     v = convert(v)
                     if v is not None:
                         rpt[k] = v
-                if len(rpt)>0:
+                if len(rpt) > 0:
                     try:
                         self._mlboard.update_task_info(rpt)
                     except:
                         print('Unexpected error during submit state: {}'.format(sys.exc_info()[0]))
         self._next_step = global_step + 1
-
