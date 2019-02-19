@@ -8,7 +8,7 @@ import math
 
 
 def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=None):
-    features = tf.reshape(features,[params['batch_size'],params['resolution'], params['resolution'],1])
+    features = tf.reshape(features, [params['batch_size'], params['resolution'], params['resolution'], 1])
     training = (mode == tf.estimator.ModeKeys.TRAIN)
     result = unet(features, 1, params['num_chans'], params['drop_prob'], params['num_pools'], training)
     loss = None
@@ -20,13 +20,13 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
         learning_rate_var = tf.Variable(float(params['lr']), trainable=False, name='lr',
                                         collections=[tf.GraphKeys.LOCAL_VARIABLES])
         loss = tf.losses.absolute_difference(labels, result)
-        mse = tf.losses.mean_squared_error(labels,result)
-        nmse = tf.norm(labels - result)**2 / tf.norm(labels)**2
+        mse = tf.losses.mean_squared_error(labels, result)
+        nmse = tf.norm(labels - result) ** 2 / tf.norm(labels) ** 2
         if training:
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
                 opt = tf.train.RMSPropOptimizer(learning_rate_var, params['weight_decay'])
-                train_op = opt.minimize(loss,global_step=tf.train.get_or_create_global_step())
+                train_op = opt.minimize(loss, global_step=tf.train.get_or_create_global_step())
         tf.summary.scalar('lr', learning_rate_var)
         tf.summary.scalar('mse', mse)
         tf.summary.scalar('nmse', nmse)
@@ -92,7 +92,7 @@ class TrainingLearningRateHook(session_run_hook.SessionRunHook):
             self._prev_learning_rate = learning_rate
         epoch = global_step // self._epoch_len
 
-        if self._epoch!=epoch:
+        if self._epoch != epoch:
             logging.info('Start epoch {}'.format(epoch))
             self._epoch = epoch
 
