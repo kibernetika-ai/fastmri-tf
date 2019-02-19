@@ -8,7 +8,7 @@ import math
 
 
 def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=None):
-    features = tf.reshape(features,[params['batch_size'],320,320,1])
+    features = tf.reshape(features,[params['batch_size'],params['resolution'], params['resolution'],1])
     training = (mode == tf.estimator.ModeKeys.TRAIN)
     result = unet(features, 1, params['num_chans'], params['drop_prob'], params['num_pools'], training)
     loss = None
