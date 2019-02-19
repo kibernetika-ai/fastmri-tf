@@ -20,8 +20,8 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     chief_hooks = []
     metrics = {}
     if mode != tf.estimator.ModeKeys.PREDICT:
-        learning_rate_var = tf.Variable(float(params['lr']), trainable=False, name='lr',
-                                        collections=[tf.GraphKeys.LOCAL_VARIABLES])
+        learning_rate_var = tf.Variable(float(params['lr']), trainable=False, name='lr')
+                                        ##collections=[tf.GraphKeys.LOCAL_VARIABLES])
         loss = tf.losses.absolute_difference(labels, result)
         mse = tf.losses.mean_squared_error(labels, result)
         nmse = tf.norm(labels - result) ** 2 / tf.norm(labels) ** 2
