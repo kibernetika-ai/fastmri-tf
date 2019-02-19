@@ -60,7 +60,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
             board_hook = MlBoardReporter({
                 "_eval_loss": loss,
                 '_eval_mse': mse,
-                '_eval_nmse': nmse}, every_steps=params['save_summary_steps'])
+                '_eval_nmse': nmse}, every_steps=1)
             eval_hooks = [tf.train.SummarySaverHook(
                 save_steps=1,
                 output_dir=model_dir + "/test",
