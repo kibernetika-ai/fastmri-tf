@@ -29,6 +29,7 @@ def train(mode, checkpoint_dir, params):
         log_step_count_steps=params['log_step_count_steps'],
     )
     epoch_len, fn = data_fn(params, mode == 'train')
+    logging.info('Samples count: {}'.format(epoch_len))
     params['epoch_len'] = epoch_len
     net = UNet(
         params=params,
