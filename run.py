@@ -38,8 +38,8 @@ def train(mode, checkpoint_dir, params):
         warm_start_from=params['warm_start_from']
 
     )
-    logging.info("Start %s mode", mode)
-    if mode == 'train':
+    logging.info("Start %s mode type %s", mode,conf.task_type)
+    if mode == 'train' and conf.task_type!='ps':
         net.train(input_fn=fn)
     else:
         train_fn = null_dataset()
