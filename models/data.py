@@ -18,7 +18,7 @@ def real_tensor(data):
 
 def apply_mask(data, mask_func, seed=None):
     shape = np.array(data.shape)
-    shape[:-3] = 1
+    shape[:-2] = 1
     mask = mask_func(shape, seed)
     return data * mask, mask
 
@@ -57,8 +57,8 @@ def center_crop(data, shape):
     h_to = h_from + shape[1]
     return data[w_from:w_to, h_from:h_to]
 
-def normalize(data, mean, stddev, eps=0.):
-    return (data - mean) / (stddev + eps)
+def normalize(data, mean, variance, eps=0.):
+    return (data - mean) / (tf.sqrt(variance) + eps)
 
 def data_fn(params,training):
     examples = []
