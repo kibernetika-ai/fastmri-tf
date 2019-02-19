@@ -45,7 +45,8 @@ def ifftshift(x, dim=None):
 
 def ifft2(data):
     data = ifftshift(data, dim=(-2, -1))
-    data = tf.ifft2d(data)
+    norm = tf.sqrt(tf.cast(tf.reduce_prod(tf.shape(data)),tf.float32))
+    data = tf.ifft2d(data)*tf.cast(norm,tf.complex64)
     data = fftshift(data, dim=(-2, -1))
     return data
 
