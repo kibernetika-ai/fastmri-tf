@@ -31,7 +31,7 @@ def fftshift(x, dim=None):
         shift = tf.shape(x)[dim] // 2
     else:
         shift = [tf.shape(x)[i] // 2 for i in dim]
-    return tf.roll(x, shift, dim)
+    return tf.manip.roll(x, shift, dim)
 
 def ifftshift(x, dim=None):
     if dim is None:
@@ -41,11 +41,11 @@ def ifftshift(x, dim=None):
         shift = (tf.shape(x)[dim] + 1) // 2
     else:
         shift = [(tf.shape(x)[i] + 1) // 2 for i in dim]
-    return tf.roll(x,shift,dim)
+    return tf.manip.roll(x,shift,dim)
 
 def ifft2(data):
     data = ifftshift(data, dim=(-2, -1))
-    data = tf.spectral.ifft2d(data)
+    data = tf.ifft2d(data)
     data = fftshift(data, dim=(-2, -1))
     return data
 
