@@ -58,8 +58,8 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
             int(params['lr_step_size']),
             float(params['lr_gamma']))]
         if not training:
-            metrics['mse'] = tf.reduce_mean(mse)
-            metrics['nmse'] = tf.reduce_mean(nmse)
+            metrics['mse'] = tf.metrics.mean(mse)
+            metrics['nmse'] = tf.metrics.mean(nmse)
             eval_hooks = [tf.train.SummarySaverHook(
                 save_steps=1,
                 output_dir=model_dir + "/test",
