@@ -30,8 +30,10 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
         tf.summary.scalar('lr', learning_rate_var)
         tf.summary.scalar('mse', mse)
         tf.summary.scalar('nmse', nmse)
-        tf.summary.image('Reconstruction', result, 3)
-        tf.summary.image('Target', labels, 3)
+        rimage = (result-tf.reduce_min(result))/tf.reduce_max(result)
+        tf.summary.image('Reconstruction', rimage, 3)
+        limage = (labels-tf.reduce_min(labels))/tf.reduce_max(labels)
+        tf.summary.image('Target', limage, 3)
         hooks = [TrainingLearningRateHook(
             params['epoch_len'],
             learning_rate_var,

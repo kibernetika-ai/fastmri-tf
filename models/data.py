@@ -105,7 +105,7 @@ def data_fn(params,training):
 
         if training:
             ds = ds.shuffle(params['batch_size']*2,reshuffle_each_iteration=True)
-        ds = ds.map(_transform)
+        ds = ds.map(_transform,num_parallel_calls=8)
         if training:
             ds = ds.repeat(params['num_epochs'])
         ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
