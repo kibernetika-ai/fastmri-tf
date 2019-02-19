@@ -18,6 +18,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     export_outputs = None
     eval_hooks = []
     chief_hooks = []
+    metrics = {}
     if mode != tf.estimator.ModeKeys.PREDICT:
         learning_rate_var = tf.Variable(float(params['lr']), trainable=False, name='lr',
                                         collections=[tf.GraphKeys.LOCAL_VARIABLES])
@@ -28,6 +29,9 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
         global_step = tf.train.get_or_create_global_step()
         epoch = global_step // params['epoch_len']
         if training:
+            tf.summary.scalar('lr', learning_rate_var)
+            tf.summary.scalar('mse', mse)
+            tf.summary.scalar('nmse', nmse)
             board_hook = MlBoardReporter({
                 "_step": global_step,
                 "_epoch": epoch,
@@ -40,9 +44,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
             with tf.control_dependencies(update_ops):
                 opt = tf.train.RMSPropOptimizer(learning_rate_var, params['weight_decay'])
                 train_op = opt.minimize(loss, global_step=global_step)
-        tf.summary.scalar('lr', learning_rate_var)
-        tf.summary.scalar('mse', mse)
-        tf.summary.scalar('nmse', nmse)
+
         rimage = (result - tf.reduce_min(result))
         rimage = rimage / tf.reduce_max(rimage)
         tf.summary.image('Reconstruction', rimage, 3)
@@ -56,15 +58,12 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
             int(params['lr_step_size']),
             float(params['lr_gamma']))]
         if not training:
-            tf.summary.scalar('loss', loss)
-            board_hook = MlBoardReporter({
-                "_eval_loss": loss,
-                '_eval_mse': mse,
-                '_eval_nmse': nmse}, every_steps=1)
+            metrics['mse'] = tf.reduce_mean(mse)
+            metrics['nmse'] = tf.reduce_mean(nmse)
             eval_hooks = [tf.train.SummarySaverHook(
                 save_steps=1,
                 output_dir=model_dir + "/test",
-                summary_op=tf.summary.merge_all()), board_hook]
+                summary_op=tf.summary.merge_all())]
     else:
         export_outputs = {
             tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: tf.estimator.export.PredictOutput(
@@ -72,7 +71,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
 
     return tf.estimator.EstimatorSpec(
         mode=mode,
-        eval_metric_ops={},
+        eval_metric_ops=metrics,
         predictions=result,
         training_chief_hooks=chief_hooks,
         loss=loss,
