@@ -5,6 +5,11 @@ import numpy as np
 from models.subsample import MaskFunc
 import logging
 
+def null_dataset():
+    def _input_fn():
+        return None
+    return _input_fn
+
 def real_tensor(data):
     if np.iscomplexobj(data):
         data = np.stack((data.real, data.imag), axis=-1)
@@ -55,7 +60,7 @@ def center_crop(data, shape):
 def normalize(data, mean, stddev, eps=0.):
     return (data - mean) / (stddev + eps)
 
-def data_fn(params):
+def data_fn(params,training):
     examples = []
     recons_key = 'reconstruction_esc' if params['challenge'] == 'singlecoil' \
         else 'reconstruction_rss'
@@ -98,7 +103,12 @@ def data_fn(params):
             target = tf.expand_dims(target,2)
             return kspace,target
 
-        ds = ds.map(_transform).repeat(params['num_epochs']).batch(params['batch_size'])
+        if training:
+            ds = ds.shuffle(params['batch_size']*2,reshuffle_each_iteration=True)
+        ds = ds.map(_transform)
+        if training:
+            ds = ds.repeat(params['num_epochs'])
+        ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
         return ds
 
     return len(examples)//params['batch_size'], _input_fn
