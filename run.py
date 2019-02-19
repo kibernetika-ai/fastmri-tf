@@ -40,7 +40,14 @@ def train(mode, checkpoint_dir, params):
     )
     logging.info("Start %s mode type %s", mode,conf.task_type)
     if mode == 'train' and conf.task_type!='ps':
-        net.train(input_fn=fn)
+        if conf.task_type in ['chief','worker']:
+            train_fn = fn()
+            train_spec = tf.estimator.TrainSpec(input_fn=train_fn)
+            eval_fn = null_dataset
+            eval_spec = tf.estimator.EvalSpec(input_fn=eval_fn, steps=1, start_delay_secs=10, throttle_secs=10)
+            tf.estimator.train_and_evaluate(net, train_spec, eval_spec)
+        else:
+            net.train(input_fn=fn)
     else:
         train_fn = null_dataset()
         train_spec = tf.estimator.TrainSpec(input_fn=train_fn)
