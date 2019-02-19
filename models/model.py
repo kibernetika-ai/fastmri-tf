@@ -5,6 +5,7 @@ from tensorflow.python.training import session_run_hook
 from tensorflow.python.training import training_util
 from tensorflow.python.training.session_run_hook import SessionRunArgs
 import math
+from kibernetika.rpt import MlBoardReporter
 
 
 def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=None):
@@ -16,17 +17,29 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     hooks = []
     export_outputs = None
     eval_hooks = []
+    chief_hooks = []
     if mode != tf.estimator.ModeKeys.PREDICT:
         learning_rate_var = tf.Variable(float(params['lr']), trainable=False, name='lr',
                                         collections=[tf.GraphKeys.LOCAL_VARIABLES])
         loss = tf.losses.absolute_difference(labels, result)
         mse = tf.losses.mean_squared_error(labels, result)
         nmse = tf.norm(labels - result) ** 2 / tf.norm(labels) ** 2
+
+        global_step = tf.train.get_or_create_global_step()
+        epoch = global_step // params['epoch_len']
         if training:
+            board_hook = MlBoardReporter({
+                "_step": global_step,
+                "_epoch": epoch,
+                "_train_loss": loss,
+                '_train_lr': learning_rate_var,
+                '_train_mse': mse,
+                '_train_nmse': nmse}, every_steps=params['save_summary_steps'])
+            chief_hooks = [board_hook]
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
                 opt = tf.train.RMSPropOptimizer(learning_rate_var, params['weight_decay'])
-                train_op = opt.minimize(loss, global_step=tf.train.get_or_create_global_step())
+                train_op = opt.minimize(loss, global_step=global_step)
         tf.summary.scalar('lr', learning_rate_var)
         tf.summary.scalar('mse', mse)
         tf.summary.scalar('nmse', nmse)
@@ -43,10 +56,15 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
             int(params['lr_step_size']),
             float(params['lr_gamma']))]
         if not training:
+            tf.summary.scalar('loss', loss)
+            board_hook = MlBoardReporter({
+                "_eval_loss": loss,
+                '_eval_mse': mse,
+                '_eval_nmse': nmse}, every_steps=params['save_summary_steps'])
             eval_hooks = [tf.train.SummarySaverHook(
                 save_steps=1,
                 output_dir=model_dir + "/test",
-                summary_op=tf.summary.merge_all())]
+                summary_op=tf.summary.merge_all()), board_hook]
     else:
         export_outputs = {
             tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: tf.estimator.export.PredictOutput(
@@ -56,6 +74,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
         mode=mode,
         eval_metric_ops={},
         predictions=result,
+        training_chief_hooks=chief_hooks,
         loss=loss,
         training_hooks=hooks,
         export_outputs=export_outputs,

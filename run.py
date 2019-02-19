@@ -10,6 +10,8 @@ from models.data import null_dataset
 import os
 import json
 
+from kibernetika.kibernetika_utils import klclient
+
 
 def train(mode, checkpoint_dir, params):
     logging.info("start build  model")
@@ -75,6 +77,17 @@ def main(args):
     if not tf.gfile.Exists(args.exp_dir):
         tf.gfile.MakeDirs(args.exp_dir)
     if args.worker:
+        klclient.update_task_info({
+            'num-pools': args.num_pools,
+            'drop-prob': args.drop_prob,
+            'num-chans': args.num_chans,
+            'batch-size': args.batch_size,
+            'lr.lr': args.lr,
+            'lr.lr-step-size': args.lr_step_size,
+            'lr.lr-gamma': args.lr_gamma,
+            'weight-decay': args.weight_decay,
+            'checkpoint_path': str(args.exp_dir),
+        })
         train('train', args.exp_dir, params)
     else:
         cluster = {'chief': ['fake_worker1:2222'],
@@ -109,7 +122,7 @@ def create_arg_parser():
     parser.add_argument(
         '--save_summary_steps',
         type=int,
-        default=10,
+        default=100,
         help="Log summary every 'save_summary_steps' steps",
     )
     parser.add_argument(
@@ -121,19 +134,19 @@ def create_arg_parser():
     parser.add_argument(
         '--save_checkpoints_steps',
         type=int,
-        default=20,
+        default=100,
         help="Save checkpoints every 'save_checkpoints_steps' steps",
     )
     parser.add_argument(
         '--keep_checkpoint_max',
         type=int,
-        default=5,
+        default=2,
         help='The maximum number of recent checkpoint files to keep.',
     )
     parser.add_argument(
         '--log_step_count_steps',
         type=int,
-        default=1,
+        default=20,
         help='The frequency, in number of global steps, that the global step/sec and the loss will be logged during training.',
     )
     parser.add_argument(
