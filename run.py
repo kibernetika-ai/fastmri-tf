@@ -121,7 +121,7 @@ def create_arg_parser():
     parser.add_argument(
         '--save_checkpoints_steps',
         type=int,
-        default=1000,
+        default=20,
         help="Save checkpoints every 'save_checkpoints_steps' steps",
     )
     parser.add_argument(
