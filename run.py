@@ -9,6 +9,7 @@ from models.data import data_fn
 from models.data import null_dataset
 import os
 import json
+import time
 
 from kibernetika.kibernetika_utils import klclient
 
@@ -181,6 +182,6 @@ def create_arg_parser():
 if __name__ == '__main__':
     logging.getLogger().setLevel('INFO')
     args = create_arg_parser().parse_args()
-    random.seed(args.seed)
-    np.random.seed(args.seed)
+    random.seed(int(time.time()*1000))
+    np.random.seed(int(time.time()*1000))
     main(args)
