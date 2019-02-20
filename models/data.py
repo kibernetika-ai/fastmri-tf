@@ -4,7 +4,7 @@ import h5py
 import numpy as np
 from models.subsample import MaskFunc
 import logging
-
+import random
 def null_dataset():
     def _input_fn():
         return None
@@ -70,6 +70,8 @@ def data_fn(params,training):
         num_slices = kspace.shape[0]
         examples += [(fname, slice) for slice in range(num_slices)]
     mask_func = MaskFunc(params['center_fractions'], params['accelerations'])
+    if training:
+        random.shuffle(examples)
 
     def _input_fn():
         def _generator():
