@@ -182,6 +182,6 @@ def create_arg_parser():
 if __name__ == '__main__':
     logging.getLogger().setLevel('INFO')
     args = create_arg_parser().parse_args()
-    random.seed(int(time.time()*1000))
-    np.random.seed(int(time.time()*1000))
+    random.seed(int(time.time()))
+    np.random.seed(int(time.time()))
     main(args)
