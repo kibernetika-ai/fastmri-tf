@@ -82,8 +82,11 @@ def input_fn(params, is_training):
 def _base_model(features, labels, mode, params=None, config=None, model_dir=None):
     embedding_dim = 256
     if mode == tf.estimator.ModeKeys.PREDICT:
-        features = features['images']
-        x = inception(features)
+        x = features['images']
+    else:
+        x = tf.zeros((params['batch_size'],299,299,3),dtype=tf.float32)
+    x = inception(x)
+    if mode == tf.estimator.ModeKeys.PREDICT:
         x = tf.reshape(x,[params['batch_size'],64,2048])
     else:
         x = features
@@ -156,7 +159,7 @@ def _base_model(features, labels, mode, params=None, config=None, model_dir=None
         predictions=predictions,
         loss=loss,
         export_outputs=export_outputs,
-        prediction_hooks=[IniInceptionHook(params['inception_checkpoint'])],
+        training_hooks=[IniInceptionHook(params['inception_checkpoint'])],
         train_op=train_op)
 
 
