@@ -103,7 +103,8 @@ def _base_model(features, labels, mode, params=None, config=None, model_dir=None
         if mode == tf.estimator.ModeKeys.EVAL:
             helper = tf.contrib.seq2seq.TrainingHelper(output_embed, output_lengths)
         else:
-            helper = tf.contrib.seq2seq.ScheduledEmbeddingTrainingHelper(output_embed, output_lengths, embedding, 0.5)
+            helper = tf.contrib.seq2seq.TrainingHelper(output_embed, output_lengths)
+            #helper = tf.contrib.seq2seq.ScheduledEmbeddingTrainingHelper(output_embed, output_lengths, embedding, 0.5)
 
     cells = [tf.contrib.rnn.GRUCell(params['hidden_size']) for _ in range(params['num_layers'])]
     mrnn = tf.contrib.rnn.MultiRNNCell(cells, state_is_tuple=True)
