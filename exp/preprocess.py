@@ -101,6 +101,6 @@ if __name__ == '__main__':
     with tf.Session() as sess:
         init_fn_inception(sess)
         for f in files:
-            res = sess.run([net], {file: f})
+            res = sess.run([net], {file: args.data_set+'/images/'+f})
             name = os.path.basename(f)
             np.save(args.to_dir + '/images/' + name, res[0][0])
