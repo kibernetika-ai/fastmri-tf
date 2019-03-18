@@ -57,4 +57,4 @@ def postprocess(outputs):
             continue;
         line.append(t)
     LOG.info('outputs: {}'.format(' '.join(line)))
-    return {'output': [' '.join(line)]}
+    return {'output': ' '.join(line).encode()}
