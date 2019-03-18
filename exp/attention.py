@@ -33,7 +33,6 @@ def dictionary(params):
             max_index = max(index, max_index)
             word_index[p[1]] = index
     word_index['<end>'] = max_index + 1
-    logging.info('End token {}', format(word_index['<end>']))
     word_index['<start>'] = 0
     return word_index
 
