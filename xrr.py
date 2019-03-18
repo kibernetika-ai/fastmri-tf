@@ -141,7 +141,7 @@ def export(checkpoint_dir,params):
         model_dir=checkpoint_dir,
     )
     feature_placeholders = {
-        'images': tf.placeholder(tf.float32, [params['batch_size'],32,params['max_width'],3], name='images'),
+        'images': tf.placeholder(tf.float32, [params['batch_size'],299,299,3], name='images'),
     }
     receiver = tf.estimator.export.build_raw_serving_input_receiver_fn(feature_placeholders,default_batch_size=params['batch_size'])
     net = attention.Model(

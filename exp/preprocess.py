@@ -52,7 +52,7 @@ def _inception_v3_arg_scope(is_training=True,
             return sc
 
 
-def _inception(inputs):
+def inception(inputs):
     with slim.arg_scope(_inception_v3_arg_scope(is_training=False)):
         with slim.arg_scope(
                 [slim.conv2d, slim.fully_connected, slim.batch_norm],
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     img = tf.image.decode_png(image_data, channels=3)
     img = tf.image.resize_bilinear([img], (299, 299))
     img = tf.cast(img,tf.float32)/127.5-1
-    net = _inception(img)
+    net = inception(img)
     inception_variables_dict = {var.op.name: var for var in slim.get_model_variables('InceptionV3')}
     init_fn_inception = slim.assign_from_checkpoint_fn(args.inception, inception_variables_dict)
     if not tf.gfile.Exists(args.to_dir + '/images'):

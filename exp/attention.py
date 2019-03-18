@@ -4,7 +4,8 @@ slim = tf.contrib.slim
 import pandas as pd
 import numpy as np
 import logging
-
+from exp.preprocess import inception
+from tensorflow.python.training import session_run_hook
 
 def tokenize(word_index, text):
     tokens = []
@@ -81,8 +82,12 @@ def input_fn(params, is_training):
 def _base_model(features, labels, mode, params=None, config=None, model_dir=None):
     logging.info('Labels: {}'.format(labels.shape))
     embedding_dim = 256
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        x = inception(features)
+    else:
+        x = features
     word_index = params['word_index']
-    x = tf.layers.dense(features, embedding_dim, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    x = tf.layers.dense(x, embedding_dim, kernel_initializer=tf.contrib.layers.xavier_initializer())
     x = tf.nn.relu(x)
     _, l1, _ = tf.unstack(tf.shape(features))
     features_length = tf.zeros((params['batch_size']), dtype=tf.int64) + tf.cast(l1, tf.int64)
@@ -150,6 +155,7 @@ def _base_model(features, labels, mode, params=None, config=None, model_dir=None
         predictions=predictions,
         loss=loss,
         export_outputs=export_outputs,
+        prediction_hooks=[IniInceptionHook(params['inception_checkpoint'])],
         train_op=train_op)
 
 
@@ -176,3 +182,28 @@ class Model(tf.estimator.Estimator):
             params=params,
             warm_start_from=warm_start_from
         )
+
+
+class IniInceptionHook(session_run_hook.SessionRunHook):
+    def __init__(self, model_path):
+        self._model_path = model_path
+        self._ops = None
+
+    def begin(self):
+        if self._model_path is not None:
+            inception_variables_dict = {
+                var.op.name: var
+                for var in slim.get_model_variables('InceptionV3')
+            }
+            self._init_fn_inception = slim.assign_from_checkpoint_fn(self._model_path, inception_variables_dict)
+
+    def after_create_session(self, session, coord):
+        if self._model_path is not None:
+            logging.info('Do  Init Inception')
+            self._init_fn_inception(session)
+
+    def before_run(self, run_context):  # pylint: disable=unused-argument
+        return None
+
+    def after_run(self, run_context, run_values):
+        None
