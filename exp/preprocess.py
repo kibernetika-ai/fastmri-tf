@@ -84,11 +84,13 @@ if __name__ == '__main__':
     words = vectorizer.get_feature_names()
     counts = x.toarray().sum(axis=0)
     words = vectorizer.get_feature_names()
+    index = 1
     with open(args.to_dir + '/dictionary.csv', 'w') as f:
         words = vectorizer.get_feature_names()
         for i, w in enumerate(words):
             if counts[i] > 2:
-                f.write('{},{}\n'.format(i + 1, w))
+                f.write('{},{}\n'.format(index, w))
+                index += 1
     file = tf.placeholder(tf.string, shape=None, name='file')
     image_data = tf.read_file(file)
     img = tf.image.decode_png(image_data, channels=3)
