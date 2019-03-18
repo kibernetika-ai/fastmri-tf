@@ -80,7 +80,6 @@ def input_fn(params, is_training):
 
 
 def _base_model(features, labels, mode, params=None, config=None, model_dir=None):
-    logging.info('Labels: {}'.format(labels.shape))
     embedding_dim = 256
     if mode == tf.estimator.ModeKeys.PREDICT:
         x = inception(features)
