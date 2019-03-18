@@ -82,13 +82,14 @@ def input_fn(params, is_training):
 def _base_model(features, labels, mode, params=None, config=None, model_dir=None):
     embedding_dim = 256
     if mode == tf.estimator.ModeKeys.PREDICT:
-        x = inception(features['images'])
+        features = features['images']
+        x = inception(features)
     else:
         x = features
     word_index = params['word_index']
     x = tf.layers.dense(x, embedding_dim, kernel_initializer=tf.contrib.layers.xavier_initializer())
     x = tf.nn.relu(x)
-    _, l1, _ = tf.unstack(tf.shape(features))
+    _, l1, _ = tf.unstack(tf.shape(x))
     features_length = tf.zeros((params['batch_size']), dtype=tf.int64) + tf.cast(l1, tf.int64)
     with tf.variable_scope('embedding'):
         embedding = tf.get_variable('embedding_op',
