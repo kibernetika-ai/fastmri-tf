@@ -84,6 +84,7 @@ def _base_model(features, labels, mode, params=None, config=None, model_dir=None
     if mode == tf.estimator.ModeKeys.PREDICT:
         features = features['images']
         x = inception(features)
+        x = tf.reshape(x,[params['batch_size'],64,2048])
     else:
         x = features
     word_index = params['word_index']
