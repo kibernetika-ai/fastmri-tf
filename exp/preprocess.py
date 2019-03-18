@@ -89,6 +89,8 @@ if __name__ == '__main__':
         words = vectorizer.get_feature_names()
         for i, w in enumerate(words):
             if counts[i] > 2:
+                if w.isdigit():
+                    continue
                 f.write('{},{}\n'.format(index, w))
                 index += 1
     file = tf.placeholder(tf.string, shape=None, name='file')
