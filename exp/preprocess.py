@@ -96,9 +96,11 @@ if __name__ == '__main__':
     net = _inception(img)
     inception_variables_dict = {var.op.name: var for var in slim.get_model_variables('InceptionV3')}
     init_fn_inception = slim.assign_from_checkpoint_fn(args.inception, inception_variables_dict)
+    if not tf.gfile.Exists(args.to_dir + '/images'):
+        tf.gfile.MakeDirs(args.to_dir + '/images')
     with tf.Session() as sess:
         init_fn_inception(sess)
         for f in files:
             res = sess.run([net], {file: f})
             name = os.path.basename(f)
-            np.save(args.to_dir + '/features/' + name, res[0][0])
+            np.save(args.to_dir + '/images/' + name, res[0][0])
