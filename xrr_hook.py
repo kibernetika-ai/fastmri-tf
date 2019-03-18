@@ -56,4 +56,5 @@ def postprocess(outputs):
         if t is None:
             continue;
         line.append(t)
+    LOG.info('outputs: {}'.format(' '.join(line)))
     return {'output': [' '.join(line)]}
