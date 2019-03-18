@@ -74,7 +74,7 @@ def create_arg_parser():
 
 
 if __name__ == '__main__':
-    args = create_arg_parser()
+    args = create_arg_parser().parse_args()
     data = pd.read_csv(args.data_set + '/descriptions.csv')
     labels = data['norm_description'][:]
     files = data['image_name'][:]
