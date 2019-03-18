@@ -3,7 +3,7 @@ import tensorflow as tf
 slim = tf.contrib.slim
 from tensorflow.contrib.slim.python.slim.nets import inception_v3
 import numpy as np
-from common.args import Args
+import argparse
 import os
 from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
@@ -66,7 +66,7 @@ def _inception(inputs):
 
 
 def create_arg_parser():
-    parser = Args()
+    parser = argparse.ArgumentParser()
     parser.add_argument('--data_set', type=str, default='./data', help='Dataset directory')
     parser.add_argument('--to_dir', type=str, default='./features', help='Destinition directory')
     parser.add_argument('--inception', type=str, default='./inception_v3.ckpt', help='Inception checkpoint')
