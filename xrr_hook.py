@@ -52,7 +52,6 @@ def preprocess(inputs,ctx, **kwargs):
 
 def postprocess(outputs, ctx, **kwargs):
     LOG.info('outputs: {}'.format(outputs))
-    outputs = outputs['output']
     predictions = outputs['labels']
     attentions = outputs['attentions']
     line = []
