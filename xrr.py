@@ -6,7 +6,7 @@ import configparser
 import exp.attention as attention
 import json
 from mlboardclient.api import client
-
+import exp.util as util
 mlboard = client.Client()
 
 
@@ -108,6 +108,12 @@ def parse_args():
         '--warm_start_from',
         type=str,
         default=None,
+        help='Warm start',
+    )
+    parser.add_argument(
+        '--dictionary',
+        type=str,
+        default='./test/dictionary.csv',
         help='Warm start',
     )
 
@@ -215,7 +221,7 @@ def main():
                 'task': {'type': 'evaluator', 'index': 0}
             })
 
-    word_index = attention.dictionary({'data_set': args.data_set})
+    word_index = util.dictionary(args.dictionary)
     logging.info("NumClasses: {}".format(len(word_index)))
     params = {
         'batch_size': args.batch_size,
@@ -233,6 +239,7 @@ def main():
         'num_layers':args.num_layers,
         'warm_start_from': args.warm_start_from,
         'inception_checkpoint': args.inception_checkpoint,
+        'dictionary': args.dictionary,
     }
 
     if not tf.gfile.Exists(checkpoint_dir):

@@ -6,36 +6,15 @@ import numpy as np
 import logging
 from exp.preprocess import inception
 from tensorflow.python.training import session_run_hook
+import exp.util as util
 
-def tokenize(word_index, text):
-    tokens = []
-    for t in text.split(' '):
-        v = word_index.get(t, None)
-        if v is not None:
-            tokens.append(v)
-    return tokens
+
 
 def null_dataset():
     def _input_fn():
         return None
 
     return _input_fn
-
-def dictionary(params):
-    word_index = {}
-    max_index = 0
-    with open(params['data_set'] + '/dictionary.csv', 'r') as f:
-        lines = f.read().split('\n')
-        for line in lines:
-            p = line.split(',')
-            if len(p) != 2:
-                continue
-            index = int(p[0])
-            max_index = max(index, max_index)
-            word_index[p[1]] = index
-    word_index['<end>'] = max_index + 1
-    word_index['<start>'] = 0
-    return word_index
 
 
 def input_fn(params, is_training):
@@ -44,7 +23,7 @@ def input_fn(params, is_training):
         data = pd.read_csv(params['data_set'] + '/train.csv')
     else:
         data = pd.read_csv(params['data_set'] + '/test.csv')
-    labels = data['norm_description'][:]
+    labels = data['description'][:]
     files = data['image_name'][:]
     word_index = params['word_index']
     image_dir = params['data_set'] + '/images/'
@@ -54,9 +33,7 @@ def input_fn(params, is_training):
         def _generator():
             for i, f in enumerate(files):
                 text = labels[i]
-                tokens = tokenize(word_index, text)
-                if len(tokens) < 2:
-                    continue
+                tokens = util.tokenize(word_index, text)
                 x = np.load(image_dir + f + '.npy')
                 x = np.reshape(x, (64, 2048))
                 tokens.append(end_token)
