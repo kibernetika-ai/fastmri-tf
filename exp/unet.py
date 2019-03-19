@@ -1,12 +1,11 @@
 import tensorflow as tf
 
-slim = tf.contrib.slim
 import pandas as pd
 import numpy as np
 import logging
-from exp.preprocess import inception
-from tensorflow.python.training import session_run_hook
+from models.unet import unet
 import exp.util as util
+import PIL.Image as Image
 
 def input_fn(params, is_training):
     batch_size = params['batch_size']
@@ -17,22 +16,23 @@ def input_fn(params, is_training):
     labels = data['description'][:]
     files = data['image_name'][:]
     word_index = params['word_index']
-    image_dir = params['data_set'] + '/npy/'
+    image_dir = params['data_set'] + '/images/'
     end_token = word_index['<end>']
-
     def _input_fn():
         def _generator():
             for i, f in enumerate(files):
                 text = labels[i]
                 tokens = util.tokenize(word_index, text)
-                x = np.load(image_dir + f + '.npy')
-                x = np.reshape(x, (64, 2048))
+                x = Image.open(image_dir+f)
+                x = x.resize((320,320))
+                x = np.asarray(x,np.float32)/127.5-1
+                x = np.reshape(x,(320,320,1))
                 tokens.append(end_token)
                 # logging.info('Tokens: {}'.format(len(tokens)))
                 yield (x, np.array(tokens, dtype=np.int32))
 
         ds = tf.data.Dataset.from_generator(_generator, (tf.float32, tf.int32),
-                                            (tf.TensorShape([64, 2048]), tf.TensorShape([None])))
+                                            (tf.TensorShape([320,320,1]), tf.TensorShape([None])))
 
         def _features_labels(x, y):
             return x, y
@@ -40,7 +40,7 @@ def input_fn(params, is_training):
         ds = ds.map(_features_labels)
         if is_training:
             ds = ds.apply(tf.contrib.data.shuffle_and_repeat(100))
-        ds = ds.padded_batch(batch_size, padded_shapes=([64, 2048], [None]),
+        ds = ds.padded_batch(batch_size, padded_shapes=([320, 320, 1], [None]),
                              padding_values=(0.0, np.int32(end_token)))
         return ds
 
@@ -52,17 +52,14 @@ def model_fn(features, labels, mode, params=None, config=None, model_dir=None):
     if mode == tf.estimator.ModeKeys.PREDICT:
         x = features['images']
     else:
-        x = tf.zeros((params['batch_size'],299,299,3),dtype=tf.float32)
-    x = inception(x)
-    if mode == tf.estimator.ModeKeys.PREDICT:
-        x = tf.reshape(x,[params['batch_size'],64,2048])
-    else:
         x = features
+    x = unet(x,embedding_dim,32,0.5,4,mode == tf.estimator.ModeKeys.TRAIN)
+    logging.info('Unet {}'.format(x.shape))
     word_index = params['word_index']
-    x = tf.layers.dense(x, embedding_dim, kernel_initializer=tf.contrib.layers.xavier_initializer())
     x = tf.nn.relu(x)
-    _, l1, _ = tf.unstack(tf.shape(x))
-    features_length = tf.zeros((params['batch_size']), dtype=tf.int64) + tf.cast(l1, tf.int64)
+    _, l1,l2, _ = tf.unstack(tf.shape(x))
+    x = tf.reshape(x,[params['batch_size'],l1*l2,embedding_dim])
+    features_length = tf.zeros((params['batch_size']), dtype=tf.int64) + tf.cast(l1*l2, tf.int64)
     with tf.variable_scope('embedding'):
         embedding = tf.get_variable('embedding_op',
                                     [len(params['word_index']), embedding_dim],
@@ -128,30 +125,5 @@ def model_fn(features, labels, mode, params=None, config=None, model_dir=None):
         predictions=predictions,
         loss=loss,
         export_outputs=export_outputs,
-        training_hooks=[IniInceptionHook(params['inception_checkpoint'])],
         train_op=train_op)
 
-
-class IniInceptionHook(session_run_hook.SessionRunHook):
-    def __init__(self, model_path):
-        self._model_path = model_path
-        self._ops = None
-
-    def begin(self):
-        if self._model_path is not None:
-            inception_variables_dict = {
-                var.op.name: var
-                for var in slim.get_model_variables('InceptionV3')
-            }
-            self._init_fn_inception = slim.assign_from_checkpoint_fn(self._model_path, inception_variables_dict)
-
-    def after_create_session(self, session, coord):
-        if self._model_path is not None:
-            logging.info('Do  Init Inception')
-            self._init_fn_inception(session)
-
-    def before_run(self, run_context):  # pylint: disable=unused-argument
-        return None
-
-    def after_run(self, run_context, run_values):
-        None

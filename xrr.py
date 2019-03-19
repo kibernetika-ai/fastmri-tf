@@ -3,7 +3,7 @@ import argparse
 import os
 import logging
 import configparser
-import exp.attention as attention
+import exp.model as model
 import json
 from mlboardclient.api import client
 import exp.util as util
@@ -114,7 +114,13 @@ def parse_args():
         '--dictionary',
         type=str,
         default='./test/dictionary.csv',
-        help='Warm start',
+        help='Dictionary',
+    )
+    parser.add_argument(
+        '--net',
+        type=str,
+        default='unet',
+        help='Network',
     )
 
     group = parser.add_mutually_exclusive_group(required=True)
@@ -150,7 +156,7 @@ def export(checkpoint_dir,params):
         'images': tf.placeholder(tf.float32, [params['batch_size'],299,299,3], name='images'),
     }
     receiver = tf.estimator.export.build_raw_serving_input_receiver_fn(feature_placeholders,default_batch_size=params['batch_size'])
-    net = attention.Model(
+    net = model.Model(
         params=params,
         model_dir=checkpoint_dir,
         config=conf,
@@ -180,7 +186,7 @@ def train(mode, checkpoint_dir, params):
         log_step_count_steps=params['log_step_count_steps'],
     )
 
-    net = attention.Model(
+    net = model.Model(
         params=params,
         model_dir=checkpoint_dir,
         config=conf,
@@ -188,12 +194,12 @@ def train(mode, checkpoint_dir, params):
     )
     logging.info("Start %s mode", mode)
     if mode == 'train':
-        input_fn = attention.input_fn(params, True)
+        input_fn = net.get_input(True)
         net.train(input_fn=input_fn)
     elif mode == 'eval':
-        train_fn = attention.null_dataset()
+        train_fn = model.null_dataset()
         train_spec = tf.estimator.TrainSpec(input_fn=train_fn)
-        eval_fn = attention.input_fn(params,False)
+        eval_fn = net.get_input(False)
         eval_spec = tf.estimator.EvalSpec(input_fn=eval_fn, steps=1, start_delay_secs=10, throttle_secs=10)
         tf.estimator.train_and_evaluate(net, train_spec, eval_spec)
     else:
@@ -240,6 +246,7 @@ def main():
         'warm_start_from': args.warm_start_from,
         'inception_checkpoint': args.inception_checkpoint,
         'dictionary': args.dictionary,
+        'net':args.net,
     }
 
     if not tf.gfile.Exists(checkpoint_dir):
