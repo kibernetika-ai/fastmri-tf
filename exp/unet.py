@@ -48,7 +48,7 @@ def input_fn(params, is_training):
 
 
 def model_fn(features, labels, mode, params=None, config=None, model_dir=None):
-    embedding_dim = 256
+    embedding_dim = 128
     if mode == tf.estimator.ModeKeys.PREDICT:
         x = features['images']
     else:
