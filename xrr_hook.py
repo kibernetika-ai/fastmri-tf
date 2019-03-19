@@ -89,6 +89,6 @@ def postprocess(outputs, ctx, **kwargs):
     img_base.save(image_bytes, format='PNG')
     return {
         'output': image_bytes.getvalue(),
-        'caption_output': np.array([line], dtype=np.string_),
+        #'caption_output': np.array([line], dtype=np.string_),
         'table_output': json.dumps(table),
     }
