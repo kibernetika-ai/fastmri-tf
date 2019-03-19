@@ -2,6 +2,12 @@ import tensorflow as tf
 import exp.attention as attention
 import exp.unet as unet
 
+def null_dataset():
+    def _input_fn():
+        return None
+
+    return _input_fn
+
 class Model(tf.estimator.Estimator):
     def __init__(
             self,
