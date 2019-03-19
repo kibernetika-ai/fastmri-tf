@@ -2,7 +2,8 @@ import PIL.Image
 import numpy as np
 import logging
 import io
-
+import base64
+import json
 
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
@@ -36,25 +37,59 @@ def init_hook(**kwargs):
     word_index = dictionary(PARAMS['dictionary'])
     LOG.info("Init hooks")
 
-def preprocess(inputs):
+def preprocess(inputs,ctx, **kwargs):
     image = inputs['images'][0]
-    image = PIL.Image.open(io.BytesIO(image))
+    original = PIL.Image.open(io.BytesIO(image))
     image = image.convert('RGB')
     image = image.resize((299,299))
     image = np.asarray(image,np.float32)/127.5-1
+    original.putalpha(1)
+    ctx.original = original
     return {
         'images': np.stack([image], axis=0),
     }
 
 
-def postprocess(outputs):
+def postprocess(outputs, ctx, **kwargs):
     LOG.info('outputs: {}'.format(outputs))
-    predictions = outputs['output']
+    outputs = outputs['output']
+    predictions = outputs['labels']
+    attentions = outputs['attentions']
     line = []
     for i in predictions[0]:
         t = word_index.get(i,None)
-        if t is None:
-            continue;
+        if t is None or t == '<end>':
+            continue
+        t = t.replace('_',' ')
         line.append(t)
-    LOG.info('outputs: {}'.format(' '.join(line)))
-    return {'output': ' '.join(line).encode()}
+    line = ' '.join(line)
+    img_base = ctx.original
+    table = []
+    for i in predictions[0]:
+        t = word_index.get(i,None)
+        if t is None or t == '<end>':
+            continue
+        t = t.replace('_',' ')
+        attention = np.resize(attentions[i][0],(8,8))
+        image = PIL.Image.fromarray(attention)
+        image.putalpha(0.6)
+        image = image.resize((299,299))
+        comp = PIL.Image.alpha_composite(img_base, image)
+        image_bytes = io.BytesIO()
+        comp.save(image_bytes, format='PNG')
+        encoded = base64.encodebytes(image_bytes.getvalue()).decode()
+        table.append(
+            {
+                'type': 'text',
+                'name': t,
+                'prob': float(1),
+                'image': encoded
+            }
+        )
+    image_bytes = io.BytesIO()
+    img_base.save(image_bytes, format='PNG')
+    return {
+        'output': image_bytes.getvalue(),
+        'caption_output': np.array([line], dtype=np.string_),
+        'table_output': json.dumps(table),
+    }
