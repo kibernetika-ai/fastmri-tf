@@ -120,7 +120,7 @@ def _base_model(features, labels, mode, params=None, config=None, model_dir=None
     attention_mechanism = tf.contrib.seq2seq.BahdanauAttention(
         num_units=params['hidden_size'], memory=x, memory_sequence_length=features_length)
     attn_cell = tf.contrib.seq2seq.AttentionWrapper(
-        mrnn, attention_mechanism, attention_layer_size=params['hidden_size'])
+        mrnn, attention_mechanism, attention_layer_size=params['hidden_size'],alignment_history=True)
     output_layer = tf.layers.Dense(len(word_index))
     initial_state = attn_cell.zero_state(dtype=tf.float32, batch_size=params['batch_size'])
     decoder = tf.contrib.seq2seq.BasicDecoder(attn_cell, helper, initial_state, output_layer=output_layer)
@@ -134,9 +134,10 @@ def _base_model(features, labels, mode, params=None, config=None, model_dir=None
     if mode == tf.estimator.ModeKeys.PREDICT:
         loss = None
         predictions = outputs[0].sample_id
+        alligments = outputs[1].alignment_history.stack()
         export_outputs = {
             tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: tf.estimator.export.PredictOutput(
-                predictions)}
+                {'labels':predictions,'attentions':alligments})}
     else:
         predictions = None
         export_outputs = None
