@@ -39,11 +39,9 @@ def init_hook(**kwargs):
 
 def preprocess(inputs,ctx, **kwargs):
     image = inputs['images'][0]
-    original = PIL.Image.open(io.BytesIO(image))
+    original = PIL.Image.open(io.BytesIO(image)).convert('RGB')
     original = original.resize((299,299))
-    image = original.convert('RGB')
     image = np.asarray(image,np.float32)/127.5-1
-    original.putalpha(1)
     ctx.original = original
     return {
         'images': np.stack([image], axis=0),
@@ -63,6 +61,8 @@ def postprocess(outputs, ctx, **kwargs):
         line.append(t)
     line = ' '.join(line)
     img_base = ctx.original
+    img_base.putalpha(255)
+    img_base = img_base.convert('RGBA')
     table = []
     for i,t in enumerate(predictions[0]):
         t = word_index.get(t,None)
@@ -73,7 +73,7 @@ def postprocess(outputs, ctx, **kwargs):
         image = PIL.Image.fromarray(attention.astype(np.uint8))
         image.putalpha(int(255*0.6))
         image = image.resize((299,299))
-        comp = PIL.Image.alpha_composite(img_base.convert('RGBA'), image.convert('RGBA'))
+        comp = PIL.Image.alpha_composite(img_base, image.convert('RGBA'))
         image_bytes = io.BytesIO()
         comp.save(image_bytes, format='PNG')
         encoded = base64.encodebytes(image_bytes.getvalue()).decode()
