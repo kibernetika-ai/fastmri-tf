@@ -51,9 +51,9 @@ def preprocess(inputs,ctx, **kwargs):
 
 
 def postprocess(outputs, ctx, **kwargs):
-    LOG.info('outputs: {}'.format(outputs))
     predictions = outputs['labels']
     attentions = outputs['attentions']
+    LOG.info('attentions: {}'.format(attentions.shape))
     line = []
     for i in predictions[0]:
         t = word_index.get(i,None)
@@ -64,8 +64,8 @@ def postprocess(outputs, ctx, **kwargs):
     line = ' '.join(line)
     img_base = ctx.original
     table = []
-    for i in predictions[0]:
-        t = word_index.get(i,None)
+    for i,t in enumerate(predictions[0]):
+        t = word_index.get(t,None)
         if t is None or t == '<end>':
             continue
         t = t.replace('_',' ')
