@@ -85,7 +85,7 @@ def model_fn(features, labels, mode, params=None, config=None, model_dir=None):
     attention_mechanism = tf.contrib.seq2seq.BahdanauAttention(
         num_units=params['hidden_size'], memory=x, memory_sequence_length=features_length)
     attn_cell = tf.contrib.seq2seq.AttentionWrapper(
-        mrnn, attention_mechanism, attention_layer_size=params['hidden_size'],alignment_history=True)
+        mrnn, attention_mechanism, attention_layer_size=params['hidden_size'],alignment_history=(mode==tf.estimator.ModeKeys.PREDICT))
     output_layer = tf.layers.Dense(len(word_index))
     initial_state = attn_cell.zero_state(dtype=tf.float32, batch_size=params['batch_size'])
     decoder = tf.contrib.seq2seq.BasicDecoder(attn_cell, helper, initial_state, output_layer=output_layer)
