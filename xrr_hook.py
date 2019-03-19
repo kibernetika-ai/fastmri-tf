@@ -71,7 +71,7 @@ def postprocess(outputs, ctx, **kwargs):
         t = t.replace('_',' ')
         attention = np.resize(attentions[i][0],(8,8))*255
         image = PIL.Image.fromarray(attention.astype(np.uint8))
-        image.putalpha(255*0.6)
+        image.putalpha(int(255*0.6))
         image = image.resize((299,299))
         comp = PIL.Image.alpha_composite(img_base.convert('RGBA'), image.convert('RGBA'))
         image_bytes = io.BytesIO()
