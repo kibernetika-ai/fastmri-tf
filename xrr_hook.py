@@ -40,7 +40,7 @@ def init_hook(**kwargs):
 def preprocess(inputs,ctx, **kwargs):
     image = inputs['images'][0]
     original = PIL.Image.open(io.BytesIO(image))
-    image = image.convert('RGB')
+    image = original.convert('RGB')
     image = image.resize((299,299))
     image = np.asarray(image,np.float32)/127.5-1
     original.putalpha(1)
