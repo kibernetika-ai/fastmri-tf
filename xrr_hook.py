@@ -41,10 +41,10 @@ def preprocess(inputs,ctx, **kwargs):
     image = inputs['images'][0]
     original = PIL.Image.open(io.BytesIO(image)).convert('RGB')
     original = original.resize((299,299))
-    image = np.asarray(image,np.float32)/127.5-1
+    input = np.asarray(original,np.float32)/127.5-1
     ctx.original = original
     return {
-        'images': np.stack([image], axis=0),
+        'images': np.stack([input], axis=0),
     }
 
 
