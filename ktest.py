@@ -180,7 +180,7 @@ model_path = os.path.join(save_dir, model_name)
 model.save(model_path)
 print('Saved trained model at %s ' % model_path)
 
-#mlboard.model_upload('cifar', '1.0.0', save_dir)
+mlboard.model_upload('cifar', '1.0.0', save_dir)
 
 # Score trained model.
 scores = model.evaluate(x_test, y_test, verbose=1)
