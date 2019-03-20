@@ -173,11 +173,14 @@ else:
                         workers=4,callbacks=callbacks)
 
 # Save model and weights
+save_dir = os.path.join(save_dir, 'model')
 if not os.path.isdir(save_dir):
     os.makedirs(save_dir)
 model_path = os.path.join(save_dir, model_name)
 model.save(model_path)
 print('Saved trained model at %s ' % model_path)
+
+#mlboard.model_upload('cifar', '1.0.0', dirname)
 
 # Score trained model.
 scores = model.evaluate(x_test, y_test, verbose=1)
