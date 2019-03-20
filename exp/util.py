@@ -17,7 +17,6 @@ def dictionary_size(word_index):
 
 def labels(word_index, text):
     text = norm_text(text)
-    print(text)
     l = np.zeros(dictionary_size(word_index), dtype=np.float32)
     for k,i in word_index.items():
         if k=='<start>':
