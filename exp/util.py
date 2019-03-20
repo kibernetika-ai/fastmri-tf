@@ -5,7 +5,7 @@ def norm_text(v,use_pace=' '):
     for i in v.lower():
         if i.isalnum():
             s.append(i)
-            space = False
+            space = (i==' ')
         elif not space:
             s.append(use_pace)
             space = True
@@ -17,12 +17,14 @@ def dictionary_size(word_index):
 
 def labels(word_index, text):
     text = norm_text(text)
+    print(text)
     l = np.zeros(dictionary_size(word_index), dtype=np.float32)
     for k,i in word_index.items():
         if k=='<start>':
             continue
         if k=='<end>':
             continue
+        k = k.replace('_',' ')
         if k in text:
             l[i-1]=1
     return l
