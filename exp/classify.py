@@ -23,6 +23,15 @@ def input_fn(params, is_training):
     word_index = params['word_index']
     num_classes = util.dictionary_size(word_index)
     image_dir = params['data_set'] + '/images/'
+    for x in enumerate(labels):
+        tokens = util.labels(word_index, x)
+        c = 0
+        for i in range(len(tokens)):
+            if tokens[i]>0:
+                c+=1
+        if c<1:
+            logging.info('bad {}'.format(x))
+
     def _input_fn():
         def _generator():
             for i, f in enumerate(files):
