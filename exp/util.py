@@ -1,3 +1,4 @@
+import numpy as np
 def norm_text(v,use_pace=' '):
     s = []
     space = False
@@ -10,6 +11,21 @@ def norm_text(v,use_pace=' '):
             space = True
     return ''.join(s)
 
+
+def dictionary_size(word_index):
+    return len(word_index)-2
+
+def labels(word_index, text):
+    text = norm_text(text)
+    l = np.zeros(dictionary_size(word_index), dtype=np.float32)
+    for k,i in word_index.items():
+        if k=='<start>':
+            continue
+        if k=='<end>':
+            continue
+        if k in text:
+            l[i-1]=1
+    return l
 
 def tokenize(word_index, text):
     text = norm_text(text)

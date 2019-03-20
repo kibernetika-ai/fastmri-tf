@@ -1,6 +1,7 @@
 import tensorflow as tf
 import exp.attention as attention
 import exp.unet as unet
+import exp.classify as classify
 
 def null_dataset():
     def _input_fn():
@@ -25,6 +26,13 @@ class Model(tf.estimator.Estimator):
                     mode=mode,
                     params=params,
                     config=config)
+            elif params['net']=='iv3_classify':
+                return classify.model_fn(
+                    features=features,
+                    labels=labels,
+                    mode=mode,
+                    params=params,
+                    config=config)
             else:
                 return attention.model_fn(
                     features=features,
@@ -42,5 +50,7 @@ class Model(tf.estimator.Estimator):
     def get_input(self,is_training):
         if self._params['net']=='unet':
             return unet.input_fn(self.params,is_training)
+        elif self._params['net']=='iv3_classify':
+            return classify.input_fn(self.params,is_training)
         else:
             return attention.input_fn(self.params,is_training)

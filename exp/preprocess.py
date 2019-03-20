@@ -52,13 +52,20 @@ def _inception_v3_arg_scope(is_training=True,
             return sc
 
 
-def inception(inputs):
-    with slim.arg_scope(_inception_v3_arg_scope(is_training=False)):
+def inception_classify_num_classes(inputs,num_classes,is_training=False):
+    with slim.arg_scope(_inception_v3_arg_scope(is_training=is_training)):
+        with slim.arg_scope(
+                [slim.conv2d, slim.fully_connected, slim.batch_norm],
+                trainable=True):
+            net, _ = inception_v3.inception_v3(inputs,num_classes,scope='InceptionV3',is_training=is_training)
+            return net
+def inception(inputs,is_training=False):
+    with slim.arg_scope(_inception_v3_arg_scope(is_training=is_training)):
         with slim.arg_scope(
                 [slim.conv2d, slim.fully_connected, slim.batch_norm],
                 trainable=True):
             with slim.arg_scope(
-                    [slim.batch_norm, slim.dropout], is_training=False):
+                    [slim.batch_norm, slim.dropout], is_training=is_training):
                 net, _ = inception_v3.inception_v3_base(
                     inputs,
                     scope='InceptionV3')
