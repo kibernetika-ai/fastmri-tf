@@ -23,7 +23,7 @@ def input_fn(params, is_training):
     word_index = params['word_index']
     num_classes = util.dictionary_size(word_index)
     image_dir = params['data_set'] + '/images/'
-    for x in enumerate(labels):
+    for j,x in enumerate(labels):
         tokens = util.labels(word_index, x)
         c = 0
         for i in range(len(tokens)):
