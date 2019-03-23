@@ -59,20 +59,61 @@ def input_fn(params, is_training):
     return _input_fn
 
 
+def _reduced_kernel_size_for_small_input(input_tensor, kernel_size):
+    shape = input_tensor.get_shape().as_list()
+    if shape[1] is None or shape[2] is None:
+        kernel_size_out = kernel_size
+    else:
+        kernel_size_out = [
+            min(shape[1], kernel_size[0]), min(shape[2], kernel_size[1])
+        ]
+    return kernel_size_out
+
+def inception_v3(inputs,
+                 num_classes=1000,
+                 is_training=True,
+                 dropout_keep_prob=0.8,
+                 spatial_squeeze=True,
+                 scope='InceptionV3'):
+    with slim.arg_scope(inception.inception_v3_arg_scope(
+            batch_norm_decay=BATCH_NORM_DECAY,
+            batch_norm_epsilon=BATCH_NORM_EPSILON)):
+        with slim.arg_scope(
+                [slim.conv2d, slim.fully_connected, slim.batch_norm],trainable=True):
+            with slim.arg_scope(
+                    [slim.batch_norm, slim.dropout], is_training=is_training):
+                net, _ = inception.inception_v3_base(
+                    inputs,
+                    scope=scope)
+    with tf.variable_scope('Logits'):
+        kernel_size = _reduced_kernel_size_for_small_input(net, [8, 8])
+        net = tf.contrib.layers.avg_pool2d(
+            net,
+            kernel_size,
+            padding='VALID')
+        if is_training:
+            net =  tf.contrib.layers.dropout(
+                net, keep_prob=dropout_keep_prob)
+        logits = tf.contrib.layers.conv2d(
+            net,
+            num_classes, [1, 1],
+            activation_fn=None,
+            normalizer_fn=None)
+        if spatial_squeeze:
+            logits = tf.squeeze(logits, [1, 2], name='SpatialSqueeze')
+        return logits
+
 def model_fn(features, labels, mode, params=None, config=None, model_dir=None):
     if mode == tf.estimator.ModeKeys.PREDICT:
         x = features['images']
     else:
         x = features
     logging.info('x:{}'.format(x.shape))
-    with arg_scope(inception.inception_v3_arg_scope(
-            batch_norm_decay=BATCH_NORM_DECAY,
-            batch_norm_epsilon=BATCH_NORM_EPSILON)):
-        logits, end_points = inception.inception_v3(
-            x,
-            num_classes=util.dictionary_size(params['word_index']),
-            is_training=(mode == tf.estimator.ModeKeys.TRAIN),
-            scope='InceptionV3')
+    logits = inception_v3(
+        x,
+        num_classes=util.dictionary_size(params['word_index']),
+        is_training=(mode == tf.estimator.ModeKeys.TRAIN),
+        scope='InceptionV3')
 
     train_op = None
     if mode == tf.estimator.ModeKeys.PREDICT:
