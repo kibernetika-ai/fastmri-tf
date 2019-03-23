@@ -37,15 +37,15 @@ def input_fn(params, is_training):
             for i, f in enumerate(files):
                 text = labels[i]
                 tokens = util.labels(word_index, text)
-                x = Image.open(image_dir+f)
+                x = Image.open(image_dir+f).convert('RGB')
                 x = x.resize((299,299))
                 x = np.asarray(x,np.float32)/127.5-1
-                x = np.reshape(x,(299,299,1))
+                x = np.reshape(x,(299,299,3))
                 # logging.info('Tokens: {}'.format(len(tokens)))
                 yield (x, tokens)
 
         ds = tf.data.Dataset.from_generator(_generator, (tf.float32, tf.float32),
-                                            (tf.TensorShape([299,299,1]), tf.TensorShape([num_classes])))
+                                            (tf.TensorShape([299,299,3]), tf.TensorShape([num_classes])))
 
         def _features_labels(x, y):
             return x, y
