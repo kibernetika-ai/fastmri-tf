@@ -61,7 +61,7 @@ def unet(inputs, out_chans, chans, drop_prob, num_pool_layers,training=True,unpo
         down = down_sample_layers.pop()
         _,w,h,f = down.shape
         if unpool_layer=='deconv':
-            x = tf.layers.conv2d_transpose(x,filters=f,kernel_size=[3, 3],strides=[2, 2],padding='SAME',
+            output = tf.layers.conv2d_transpose(output,filters=f,kernel_size=[3, 3],strides=[2, 2],padding='SAME',
                                            activation=None,
                                            kernel_initializer=tf.contrib.layers.variance_scaling_initializer(),
                                            name='unpool_{}'.format(i + 1))
