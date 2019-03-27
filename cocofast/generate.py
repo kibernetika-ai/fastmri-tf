@@ -10,8 +10,8 @@ import cv2
 
 
 
-def generate(src_sir,dest_dir,resolution):
-    with open(src_sir + '/annotations/instances_train2017.json') as f:
+def generate(src_dir,dest_dir,resolution):
+    with open(src_dir + '/annotations/instances_train2017.json') as f:
         data = json.load(f)
     step = 0
     data = data['annotations']
@@ -22,7 +22,7 @@ def generate(src_sir,dest_dir,resolution):
     for a in data:
         if a['category_id'] == 1 and a['iscrowd'] == 0:
             name = '{:012d}.jpg'.format(a['image_id'])
-            fname = src_sir + '/train2017/{}'.format(name)
+            fname = src_dir + '/train2017/{}'.format(name)
             segmentation = a['segmentation']
             area = a['area']
             if os.path.exists(fname):
@@ -48,13 +48,13 @@ def generate(src_sir,dest_dir,resolution):
 
 
 def main(args):
-    generate(args.src_sir,args.dest_dir,args.resolution)
+    generate(args.src_dir,args.dest_dir,args.resolution)
 
 def create_arg_parser():
     parser = argparse.ArgumentParser()
     logging.getLogger().setLevel('INFO')
     tf.logging.set_verbosity(tf.logging.INFO)
-    parser.add_argument('--src_sir', type=str,required=True)
+    parser.add_argument('--src_dir', type=str,required=True)
     parser.add_argument('--dest_dir', type=str,required=True)
     parser.add_argument('--resolution', default=320, type=int, help='Resolution of images')
     return parser
