@@ -35,7 +35,7 @@ def data_fn(params, training):
             mask = mask[:,:,0]
             mask = tf.reshape(mask,[resolution,resolution,1])
             img = tf.cast(img,dtype=tf.float32)/127.5-1
-            mask = tf.cast(mask,dtype=tf.float32)/127.5-1
+            mask = tf.cast(mask,dtype=tf.int32)/255
             return img,mask
         ds = ds.map(_read_images)
         if training:
@@ -55,9 +55,9 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     logits = unet(features, out_chans, params['num_chans'], params['drop_prob'], params['num_pools'], training=training,unpool_layer=params['unpool'])
     if params['loss']=='entropy':
         mask = tf.cast(tf.argmax(logits, axis=3),tf.float32)
-        logging.info('Mask shape1: ',mask.shape)
+        logging.info('Mask shape1: {}'.format(mask.shape))
         mask = tf.expand_dims(mask,-1)
-        logging.info('Mask shape2: ',mask.shape)
+        logging.info('Mask shape2: {}'.format(mask.shape))
     else:
         mask = logits
     loss = None
@@ -76,7 +76,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
             labels = tf.cast(labels, tf.int32)
             logits = tf.reshape(logits, [tf.shape(logits)[0], -1, 2])
             labels = tf.reshape(labels, [tf.shape(labels)[0], -1])
-            loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels, name="loss")
+            loss = tf.losses.sparse_softmax_cross_entropy(logits=logits, labels=labels)
         else:
             loss = tf.losses.absolute_difference(flabels, mask)
         mse = tf.losses.mean_squared_error(flabels, mask)
