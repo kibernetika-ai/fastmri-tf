@@ -125,7 +125,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     return tf.estimator.EstimatorSpec(
         mode=mode,
         eval_metric_ops=metrics,
-        predictions=result,
+        predictions=mask,
         training_chief_hooks=chief_hooks,
         loss=loss,
         training_hooks=hooks,
