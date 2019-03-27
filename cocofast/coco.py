@@ -25,7 +25,7 @@ def data_fn(params, training):
             area = a['area']
             if os.path.exists(fname):
                 if len(segmentation) < 4 and area > 900:
-                    tmp.append((a['segmentation'], fname))
+                    tmp.append((segmentation, fname))
             else:
                 if params['limit'] < 0:
                     logging.info('Can\'t find image {:012d}.jpg'.format(a['image_id']))
