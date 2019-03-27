@@ -70,7 +70,6 @@ def main(args):
         'weight_decay': args.weight_decay,
         'checkpoint': str(args.checkpoint_dir),
         'resolution': args.resolution,
-        'data_path': args.data_path,
         'save_summary_steps': args.save_summary_steps,
         'save_checkpoints_secs': args.save_checkpoints_secs,
         'save_checkpoints_steps': args.save_checkpoints_steps,
