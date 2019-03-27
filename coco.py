@@ -68,7 +68,7 @@ def main(args):
         'lr_step_size': args.lr_step_size,
         'lr_gamma': args.lr_gamma,
         'weight_decay': args.weight_decay,
-        'checkpoint': str(args.exp_dir),
+        'checkpoint': str(args.checkpoint_dir),
         'seed': args.seed,
         'resolution': args.resolution,
         'challenge': args.challenge,
@@ -85,8 +85,8 @@ def main(args):
         'resolution': args.resolution,
         'data_set': args.data_set,
     }
-    if not tf.gfile.Exists(args.exp_dir):
-        tf.gfile.MakeDirs(args.exp_dir)
+    if not tf.gfile.Exists(args.checkpoint_dir):
+        tf.gfile.MakeDirs(args.checkpoint_dir)
     if args.worker:
         klclient.update_task_info({
             'num-pools': args.num_pools,
@@ -110,7 +110,7 @@ def main(args):
                 'cluster': cluster,
                 'task': {'type': 'evaluator', 'index': 0}
             })
-        train('eval', args.exp_dir, params)
+        train('eval', args.checkpoint_dir, params)
 
 
 def create_arg_parser():
