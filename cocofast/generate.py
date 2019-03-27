@@ -39,7 +39,7 @@ def generate(src_dir,dest_dir,resolution):
                             m = cv2.fillPoly(m, p, color=(255, 255, 255))
                         m = cv2.resize(m, (resolution, resolution))
                         if os.path.exists(dest_dir+'/masks/'+name):
-                            pm = cv2.imread(dest_dir+'/masks/'+name, cv2.IMREAD_COLOR)[:,:]
+                            pm = cv2.imread(dest_dir+'/masks/'+name, cv2.IMREAD_COLOR)[:,:,0]
                             m = np.maximum(m,pm)
                         cv2.imwrite(dest_dir+'/masks/'+name,m)
                         step+=1
