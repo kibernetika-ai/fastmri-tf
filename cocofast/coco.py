@@ -55,6 +55,9 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     logits = unet(features, out_chans, params['num_chans'], params['drop_prob'], params['num_pools'], training=training,unpool_layer=params['unpool'])
     if params['loss']=='entropy':
         mask = tf.cast(tf.argmax(logits, axis=3),tf.float32)
+        logging.info('Mask shape1: ',mask.shape)
+        mask = tf.expand_dims(mask,-1)
+        logging.info('Mask shape2: ',mask.shape)
     else:
         mask = logits
     loss = None
