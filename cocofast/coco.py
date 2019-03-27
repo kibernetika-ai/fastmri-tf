@@ -24,16 +24,19 @@ def data_fn(params, training):
             if os.path.exists(fname):
                 tmp.append((a['segmentation'], fname))
             else:
-                logging.info('Can\'t find image {:012d}.jpg'.format(a['image_id']))
+                if params['limit']<0:
+                    logging.info('Can\'t find image {:012d}.jpg'.format(a['image_id']))
+            if params['limit']>0 and len(tmp)>=params['limit']:
+                break
     data = tmp
     resolution = params['resolution']
 
     def _input_fn():
         def _generator():
             for i in data:
-                img = cv2.imread(data_set + '/train2017/{:012d}.jpg'.format(i[1]), cv2.IMREAD_COLOR)[:, :,
+                img = cv2.imread(i[1], cv2.IMREAD_COLOR)[:, :,
                       ::-1]
-                m = np.zeros((img.shape[0], img.shape[1], 1), np.float32)
+                m = np.zeros((img.shape[0], img.shape[1]), np.float32)
                 for s in i[0]:
                     p = np.array(s, np.int32)
                     p = np.reshape(p, (1, int(p.shape[0] / 2), 2))
@@ -41,11 +44,12 @@ def data_fn(params, training):
                 img = cv2.resize(img, (resolution, resolution))
                 img = img.astype(np.float32) / 127.5 - 1
                 m = cv2.resize(m, (resolution, resolution)) / 127.5 - 1
+                m = np.reshape(m,(resolution,resolution,1))
                 yield (img, m)
 
         ds = tf.data.Dataset.from_generator(_generator, (tf.float32, tf.float32),
-                                            (tf.TensorShape([resolution, resolution]),
-                                             tf.TensorShape([resolution, resolution])))
+                                            (tf.TensorShape([resolution, resolution,3]),
+                                             tf.TensorShape([resolution, resolution,1])))
         if training:
             ds = ds.shuffle(params['batch_size'] * 2, reshuffle_each_iteration=True)
         ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
@@ -191,7 +195,7 @@ class CocoUnet(tf.estimator.Estimator):
                 model_dir=model_dir,
             )
 
-        super(UNet, self).__init__(
+        super(CocoUnet, self).__init__(
             model_fn=_model_fn,
             model_dir=model_dir,
             config=config,

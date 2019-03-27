@@ -1,5 +1,4 @@
 import argparse
-import pathlib
 import random
 import numpy as np
 import tensorflow as tf
@@ -79,6 +78,7 @@ def main(args):
         'use_seed': False,
         'resolution': args.resolution,
         'data_set': args.data_set,
+        'limit':args.limit,
     }
     if not tf.gfile.Exists(args.checkpoint_dir):
         tf.gfile.MakeDirs(args.checkpoint_dir)
@@ -143,6 +143,7 @@ def create_arg_parser():
 
     parser.add_argument('--data_set', type=str, required=True,
                         help='Path to the dataset')
+    parser.add_argument('--limit', default=-1, type=int, help='Limit train')
     parser.add_argument(
         '--save_summary_steps',
         type=int,
