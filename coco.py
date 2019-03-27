@@ -69,7 +69,6 @@ def main(args):
         'lr_gamma': args.lr_gamma,
         'weight_decay': args.weight_decay,
         'checkpoint': str(args.checkpoint_dir),
-        'seed': args.seed,
         'resolution': args.resolution,
         'challenge': args.challenge,
         'data_path': args.data_path,
