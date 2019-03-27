@@ -34,8 +34,8 @@ def data_fn(params, training):
             mask = tf.image.decode_jpeg(mask)
             mask = mask[:,:,0]
             mask = tf.reshape(mask,[resolution,resolution,1])
-            img = img/127.5-1
-            mask = mask/127.5-1
+            img = tf.cast(img,dtype=tf.float32)/127.5-1
+            mask = tf.cast(mask,dtype=tf.float32)/127.5-1
             return img,mask
         ds = ds.map(_read_images)
         if training:
