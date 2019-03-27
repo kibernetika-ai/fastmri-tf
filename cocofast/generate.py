@@ -31,8 +31,9 @@ def generate(src_dir,dest_dir,resolution):
                     img_area = img.shape[0]*img.shape[1]
                     if area>img_area*0.1:
                         m = np.zeros((img.shape[0], img.shape[1]), np.uint8)
-                        img = cv2.resize(img, (resolution, resolution))
-                        cv2.imwrite(dest_dir+'/images/'+name,img[:, :,::-1])
+                        if not os.path.exists(dest_dir+'/images/'+name):
+                            img = cv2.resize(img, (resolution, resolution))
+                            cv2.imwrite(dest_dir+'/images/'+name,img[:, :,::-1])
                         for s in segmentation:
                             p = np.array(s, np.int32)
                             p = np.reshape(p, (1, int(p.shape[0] / 2), 2))
