@@ -73,10 +73,10 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
 
         flabels = tf.cast(labels,tf.float32)
         if params['loss']=='entropy':
-            labels = tf.cast(labels, tf.int32)
+            llabels = tf.cast(labels, tf.int32)
             logits = tf.reshape(logits, [tf.shape(logits)[0], -1, 2])
-            labels = tf.reshape(labels, [tf.shape(labels)[0], -1])
-            loss = tf.losses.sparse_softmax_cross_entropy(logits=logits, labels=labels)
+            llabels = tf.reshape(llabels, [tf.shape(llabels)[0], -1])
+            loss = tf.losses.sparse_softmax_cross_entropy(logits=logits, labels=llabels)
         else:
             loss = tf.losses.absolute_difference(flabels, mask)
         mse = tf.losses.mean_squared_error(flabels, mask)
