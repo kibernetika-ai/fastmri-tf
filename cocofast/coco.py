@@ -9,50 +9,35 @@ from tensorflow.python.training import session_run_hook
 from tensorflow.python.training import training_util
 from tensorflow.python.training.session_run_hook import SessionRunArgs
 import math
-
+import glob
 import cv2
 
 
 def data_fn(params, training):
     data_set = params['data_set']
-    with open(data_set + '/annotations/instances_train2017.json') as f:
-        data = json.load(f)
-    tmp = []
-    for a in data['annotations']:
-        if a['category_id'] == 1 and a['iscrowd'] == 0:
-            fname = data_set + '/train2017/{:012d}.jpg'.format(a['image_id'])
-            segmentation = a['segmentation']
-            area = a['area']
-            if os.path.exists(fname):
-                if len(segmentation) < 4 and area > 900:
-                    tmp.append((segmentation, fname))
-            else:
-                if params['limit'] < 0:
-                    logging.info('Can\'t find image {:012d}.jpg'.format(a['image_id']))
-            if params['limit'] > 0 and len(tmp) >= params['limit']:
-                break
-    data = tmp
+    files = glob.glob(data_set+'/masks/*.jpg')
+    for i in range(len(files)):
+        mask = files[i]
+        img = os.path.basename(mask)
+        img = data_set+'/images/'+img
+        files[i] = [img,mask]
+
     resolution = params['resolution']
 
     def _input_fn():
-        def _generator():
-            for i in data:
-                img = cv2.imread(i[1], cv2.IMREAD_COLOR)[:, :,
-                      ::-1]
-                m = np.zeros((img.shape[0], img.shape[1]), np.float32)
-                for s in i[0]:
-                    p = np.array(s, np.int32)
-                    p = np.reshape(p, (1, int(p.shape[0] / 2), 2))
-                    m = cv2.fillPoly(m, p, color=(255, 255, 255))
-                img = cv2.resize(img, (resolution, resolution))
-                img = img.astype(np.float32) / 127.5 - 1
-                m = cv2.resize(m, (resolution, resolution)) / 127.5 - 1
-                m = np.reshape(m, (resolution, resolution, 1))
-                yield (img, m)
-
-        ds = tf.data.Dataset.from_generator(_generator, (tf.float32, tf.float32),
-                                            (tf.TensorShape([resolution, resolution, 3]),
-                                             tf.TensorShape([resolution, resolution, 1])))
+        ds = tf.data.Dataset.from_tensor_slices(files)
+        def _read_images(a):
+            img = tf.read_file(a[0])
+            img = tf.image.decode_jpeg(img)
+            img = tf.reshape(img,[resolution,resolution,3])
+            mask = tf.read_file(a[1])
+            mask = tf.image.decode_jpeg(mask)
+            mask = mask[:,:,0]
+            mask = tf.reshape(mask,[resolution,resolution,1])
+            img = img/127.5-1
+            mask = mask/127.5-1
+            return img,mask
+        ds = ds.map(_read_images)
         if training:
             ds = ds.shuffle(params['batch_size'] * 2, reshuffle_each_iteration=True)
         ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
@@ -60,7 +45,7 @@ def data_fn(params, training):
             ds = ds.repeat(params['num_epochs']).prefetch(params['batch_size'])
         return ds
 
-    return len(data) // params['batch_size'], _input_fn
+    return len(files) // params['batch_size'], _input_fn
 
 
 def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=None):
