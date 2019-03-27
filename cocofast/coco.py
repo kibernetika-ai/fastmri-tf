@@ -59,7 +59,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
         mask = tf.expand_dims(mask,-1)
         logging.info('Mask shape2: {}'.format(mask.shape))
     else:
-        mask = logits
+        mask = tf.sigmoid(logits)
     loss = None
     train_op = None
     hooks = []
