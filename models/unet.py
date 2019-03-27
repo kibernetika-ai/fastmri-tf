@@ -40,7 +40,7 @@ def unpool(pool, ind, ksize=[1, 2, 2, 1], name=None):
         ret = tf.scatter_nd(indices, values, output_shape)
         return ret
 
-def unet(inputs, out_chans, chans, drop_prob, num_pool_layers, training):
+def unet(inputs, out_chans, chans, drop_prob, num_pool_layers,training=True,unpool_layer='unpool'):
     output, pull = conv_block(inputs, chans, drop_prob, 'down_1', True, training)
     logging.info('Down_1 - {}'.format(output.shape))
     down_sample_layers = [output]
@@ -59,10 +59,17 @@ def unet(inputs, out_chans, chans, drop_prob, num_pool_layers, training):
 
     for i in range(num_pool_layers):
         down = down_sample_layers.pop()
-        output = unpool(output, pull_args.pop(),name='unpool_{}'.format(i + 1))
-        _,w,h,_ = down.shape
-        output = output[:,:w,:h,:]
-        output = tf.reshape(output, tf.shape(down))
+        _,w,h,f = down.shape
+        if unpool_layer=='deconv':
+            x = tf.layers.conv2d_transpose(x,filters=f,kernel_size=[3, 3],strides=[2, 2],padding='SAME',
+                                           activation=None,
+                                           kernel_initializer=tf.contrib.layers.variance_scaling_initializer(),
+                                           name='unpool_{}'.format(i + 1))
+        else:
+            output = unpool(output, pull_args.pop(),name='unpool_{}'.format(i + 1))
+            _,w,h,_ = down.shape
+            output = output[:,:w,:h,:]
+            output = tf.reshape(output, tf.shape(down))
         output = tf.concat([output, down], 3)
         logging.info('Up_{} - {}'.format(i+1,output.shape))
         if i < (num_pool_layers-1):

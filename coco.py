@@ -79,6 +79,9 @@ def main(args):
         'resolution': args.resolution,
         'data_set': args.data_set,
         'limit':args.limit,
+        'unpool':args.unpool,
+        'optimizer':args.optimizer,
+        'loss':args.loss,
     }
     if not tf.gfile.Exists(args.checkpoint_dir):
         tf.gfile.MakeDirs(args.checkpoint_dir)
@@ -179,6 +182,24 @@ def create_arg_parser():
         type=str,
         default=None,
         help='Warm start from',
+    )
+    parser.add_argument(
+        '--loss',
+        type=str,
+        default='adiff',
+        help='Loss function',
+    )
+    parser.add_argument(
+        '--optimizer',
+        type=str,
+        default='RMSPropOptimizer',
+        help='Optimizer',
+    )
+    parser.add_argument(
+        '--unpool',
+        type=str,
+        default='unpool',
+        help='Unpool type',
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.set_defaults(worker=False)

@@ -51,7 +51,12 @@ def data_fn(params, training):
 def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=None):
     features = tf.reshape(features, [params['batch_size'], params['resolution'], params['resolution'], 3])
     training = (mode == tf.estimator.ModeKeys.TRAIN)
-    result = unet(features, 1, params['num_chans'], params['drop_prob'], params['num_pools'], training)
+    out_chans = 2 if params['loss']=='entropy' else 1
+    logits = unet(features, out_chans, params['num_chans'], params['drop_prob'], params['num_pools'], training=training,unpool_layer=params['unpool'])
+    if params['loss']=='entropy':
+        mask = tf.argmax(logits, axis=3,output_type=tf.float32)
+    else:
+        mask = logits
     loss = None
     train_op = None
     hooks = []
@@ -62,9 +67,17 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     if mode != tf.estimator.ModeKeys.PREDICT:
         learning_rate_var = tf.Variable(float(params['lr']), trainable=False, name='lr',
                                         collections=[tf.GraphKeys.LOCAL_VARIABLES])
-        loss = tf.losses.absolute_difference(labels, result)
-        mse = tf.losses.mean_squared_error(labels, result)
-        nmse = tf.norm(labels - result) ** 2 / tf.norm(labels) ** 2
+
+        flabels = tf.cast(labels,tf.float32)
+        if params['loss']=='entropy':
+            labels = tf.cast(labels, tf.int32)
+            logits = tf.reshape(logits, [tf.shape(logits)[0], -1, 2])
+            labels = tf.reshape(labels, [tf.shape(labels)[0], -1])
+            loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels, name="loss")
+        else:
+            loss = tf.losses.absolute_difference(flabels, mask)
+        mse = tf.losses.mean_squared_error(flabels, mask)
+        nmse = tf.norm(flabels - mask) ** 2 / tf.norm(flabels) ** 2
 
         global_step = tf.train.get_or_create_global_step()
         epoch = global_step // params['epoch_len']
@@ -82,11 +95,14 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
             chief_hooks = [board_hook]
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
-                opt = tf.train.RMSPropOptimizer(learning_rate_var, params['weight_decay'])
+                if params['optimizer']=='AdamOptimizer':
+                    opt = tf.train.AdamOptimizer(learning_rate_var)
+                else:
+                    opt = tf.train.RMSPropOptimizer(learning_rate_var, params['weight_decay'])
                 train_op = opt.minimize(loss, global_step=global_step)
 
         tf.summary.image('Src', features, 3)
-        rimage = (result - tf.reduce_min(result))
+        rimage = (mask - tf.reduce_min(mask))
         rimage = rimage / tf.reduce_max(rimage)
         tf.summary.image('Reconstruction', rimage, 3)
         limage = (labels - tf.reduce_min(labels))
@@ -104,7 +120,7 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     else:
         export_outputs = {
             tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: tf.estimator.export.PredictOutput(
-                result)}
+                mask)}
 
     return tf.estimator.EstimatorSpec(
         mode=mode,
