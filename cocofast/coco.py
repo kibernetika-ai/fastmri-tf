@@ -21,12 +21,14 @@ def data_fn(params, training):
     for a in data['annotations']:
         if a['category_id'] == 1 and a['iscrowd'] == 0:
             fname = data_set + '/train2017/{:012d}.jpg'.format(a['image_id'])
-            if os.path.exists(fname):
+            segmentation = a['segmentation']
+            area = a['area']
+            if len(segmentation) < 4 and area > 900 and os.path.exists(fname):
                 tmp.append((a['segmentation'], fname))
             else:
-                if params['limit']<0:
+                if params['limit'] < 0:
                     logging.info('Can\'t find image {:012d}.jpg'.format(a['image_id']))
-            if params['limit']>0 and len(tmp)>=params['limit']:
+            if params['limit'] > 0 and len(tmp) >= params['limit']:
                 break
     data = tmp
     resolution = params['resolution']
@@ -44,12 +46,12 @@ def data_fn(params, training):
                 img = cv2.resize(img, (resolution, resolution))
                 img = img.astype(np.float32) / 127.5 - 1
                 m = cv2.resize(m, (resolution, resolution)) / 127.5 - 1
-                m = np.reshape(m,(resolution,resolution,1))
+                m = np.reshape(m, (resolution, resolution, 1))
                 yield (img, m)
 
         ds = tf.data.Dataset.from_generator(_generator, (tf.float32, tf.float32),
-                                            (tf.TensorShape([resolution, resolution,3]),
-                                             tf.TensorShape([resolution, resolution,1])))
+                                            (tf.TensorShape([resolution, resolution, 3]),
+                                             tf.TensorShape([resolution, resolution, 1])))
         if training:
             ds = ds.shuffle(params['batch_size'] * 2, reshuffle_each_iteration=True)
         ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
