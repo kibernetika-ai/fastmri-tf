@@ -15,12 +15,12 @@ import cv2
 
 def data_fn(params, training):
     data_set = params['data_set']
-    with open(data_set + '/coco2107/annotations/instances_train2017.json') as f:
+    with open(data_set + '/annotations/instances_train2017.json') as f:
         data = json.load(f)
     tmp = []
     for a in data['annotations']:
         if a['category_id'] == 1 and a['iscrowd'] == 0:
-            fname = data_set + '/coco2107/train2017/{:012d}.jpg'.format(a['image_id'])
+            fname = data_set + '/train2017/{:012d}.jpg'.format(a['image_id'])
             if os.path.exists(fname):
                 tmp.append((a['segmentation'], fname))
             else:
@@ -31,7 +31,7 @@ def data_fn(params, training):
     def _input_fn():
         def _generator():
             for i in data:
-                img = cv2.imread(data_set + '/coco2107/train2017/{:012d}.jpg'.format(i[1]), cv2.IMREAD_COLOR)[:, :,
+                img = cv2.imread(data_set + '/train2017/{:012d}.jpg'.format(i[1]), cv2.IMREAD_COLOR)[:, :,
                       ::-1]
                 m = np.zeros((img.shape[0], img.shape[1], 1), np.float32)
                 for s in i[0]:
