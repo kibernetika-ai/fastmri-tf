@@ -30,6 +30,7 @@ def data_fn(params, training):
             mask = tf.read_file(a[1])
             mask = tf.image.decode_jpeg(mask)
             mask = mask[:, :, 0]
+            mask = tf.expand_dims(mask,-1)
             img = tf.cast(img, dtype=tf.float32) / 255
             mask = tf.cast(mask, dtype=tf.int32) / 255
             return img, mask
@@ -44,9 +45,9 @@ def data_fn(params, training):
             if resolution!=320:
                 a = tf.image.resize_bilinear(a, [resolution, resolution])
                 b = tf.image.resize_bilinear(b, [resolution,resolution])
-                a = tf.reshape(a, [resolution, resolution, 3])
-                b = tf.reshape(b, [resolution, resolution, 1])
-                return  a,b
+            a = tf.reshape(a, [params['batch_size'],resolution, resolution, 3])
+            b = tf.reshape(b, [params['batch_size'],resolution, resolution, 1])
+            return  a,b
         ds = ds.map(_resize)
         return ds
 
