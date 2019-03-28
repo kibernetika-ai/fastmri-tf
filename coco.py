@@ -109,6 +109,7 @@ def main(args):
     }
     if args.export:
         export(args.checkpoint_dir, params)
+        return
     if not tf.gfile.Exists(args.checkpoint_dir):
         tf.gfile.MakeDirs(args.checkpoint_dir)
     if args.worker:
