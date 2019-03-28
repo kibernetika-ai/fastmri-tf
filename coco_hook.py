@@ -1,21 +1,43 @@
-import PIL.Image
 import numpy as np
 import logging
-import io
-import base64
-import json
+import cv2
 
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
 
+PARAMS = {
+    'resolution': '320',
+    'scaling': '-1:1'
+}
 
-def preprocess(inputs,ctx, **kwargs):
+
+def init_hook(**kwargs):
+    global PARAMS
+    PARAMS.update(kwargs)
+    PARAMS['resolution'] = int(PARAMS.get('resolution', 320))
+    LOG.info("Init hooks {}".format(PARAMS))
+
+
+def preprocess(inputs, ctx, **kwargs):
     image = inputs['image'][0]
-    original = PIL.Image.open(io.BytesIO(image)).convert('RGB')
-    original = original.resize((320,320))
-    input = np.asarray(original,np.float32)
-    ctx.input = input
-    input = input/127.5-1
+    image = cv2.imdecode(np.frombuffer(image, np.uint8), cv2.IMREAD_COLOR)[:, :, ::-1]
+    ctx.w = image.shape[1]
+    ctx.h = image.shape[0]
+    if ctx.w > ctx.h:
+        if ctx.w > 1024:
+            ctx.h *= int(1024.0 / float(ctx.w))
+            ctx.w = 1024
+        else:
+            ctx.w *= int(1024.0 / float(ctx.h))
+            ctx.h = 1024
+    image = cv2.resize(image, (PARAMS['resolution'], PARAMS['resolution']))
+    input = np.asarray(image, np.float32)
+    if PARAMS['scaling'] == '0:1':
+        input = input / 255.0
+        ctx.input = input
+    else:
+        ctx.input = input
+        input = input / 127.5 - 1
     return {
         'image': np.stack([input], axis=0),
     }
@@ -24,13 +46,16 @@ def preprocess(inputs,ctx, **kwargs):
 def postprocess(outputs, ctx, **kwargs):
     mask = outputs['output']
     logging.info('Mask shape {}'.format(mask.shape))
-    #mask[np.less(mask,1)]=0
-    #mask[np.greater_equal(mask,1)]=1
-    output = ctx.input*mask
-    #output = (output+1)*127.5
-    image_bytes = io.BytesIO()
-    img = PIL.Image.fromarray(output[0].astype(np.uint8))
-    img.save(image_bytes, format='PNG')
+    if PARAMS['scaling'] == '0:1':
+        output = ctx.input * mask * 255.0
+    else:
+        output = ctx.input * mask
+
+    output = output[0].astype(np.uint8)
+    if output.shape[0] != ctx.h or output.shape[1] != ctx.w:
+        output = cv2.resize(output, (ctx.w, ctx.h))
+    _, buf = cv2.imencode('.png', output[:, :, ::-1])
+    image = np.array(buf).tostring()
     return {
-        'output': image_bytes.getvalue(),
+        'output': image,
     }
