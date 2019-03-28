@@ -31,13 +31,13 @@ def preprocess(inputs, ctx, **kwargs):
         if ctx.h > 1024:
             ctx.w = int(float(ctx.w) * 1024.0 / float(ctx.h))
             ctx.h = 1024
+    ctx.input = cv2.resize(image, (ctx.w, ctx.h))
+    ctx.input = np.asarray(ctx.input, np.float32)
     image = cv2.resize(image, (PARAMS['resolution'], PARAMS['resolution']))
     input = np.asarray(image, np.float32)
     if PARAMS['scaling'] == '0:1':
         input = input / 255.0
-        ctx.input = input
     else:
-        ctx.input = input
         input = input / 127.5 - 1
     return {
         'image': np.stack([input], axis=0),
@@ -47,15 +47,11 @@ def preprocess(inputs, ctx, **kwargs):
 def postprocess(outputs, ctx, **kwargs):
     mask = outputs['output']
     logging.info('Mask shape {}'.format(mask.shape))
-    if PARAMS['scaling'] == '0:1':
-        output = ctx.input * mask * 255.0
-    else:
-        output = ctx.input * mask
-
-    output = output[0].astype(np.uint8)
-    if output.shape[0] != ctx.h or output.shape[1] != ctx.w:
-        logging.info('Resize to {}'.format(ctx.h, ctx.w))
-        output = cv2.resize(output, (ctx.w, ctx.h))
+    mask = mask[0]
+    if mask.shape[0] != ctx.h or mask.shape[1] != ctx.w:
+        mask = cv2.resize(mask, (ctx.w, ctx.h))
+    output = ctx.input * mask
+    output = output.astype(np.uint8)
     _, buf = cv2.imencode('.png', output[:, :, ::-1])
     image = np.array(buf).tostring()
     return {
