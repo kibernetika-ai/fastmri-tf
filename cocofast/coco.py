@@ -77,6 +77,10 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
             logits = tf.reshape(logits, [tf.shape(logits)[0], -1, 2])
             llabels = tf.reshape(llabels, [tf.shape(llabels)[0], -1])
             loss = tf.losses.sparse_softmax_cross_entropy(logits=logits, labels=llabels)
+        elif params['loss']=='image':
+            original = features*flabels
+            predicted = features*mask
+            loss = tf.losses.absolute_difference(original, predicted)
         else:
             loss = tf.losses.absolute_difference(flabels, mask)
         mse = tf.losses.mean_squared_error(flabels, mask)

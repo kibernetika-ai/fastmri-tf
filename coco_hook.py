@@ -24,9 +24,10 @@ def preprocess(inputs,ctx, **kwargs):
 def postprocess(outputs, ctx, **kwargs):
     mask = outputs['output']
     logging.info('Mask shape {}'.format(mask.shape))
-    mask[np.greater_equal(mask,1)]=1
+    #mask[np.less(mask,1)]=0
+    #mask[np.greater_equal(mask,1)]=1
     output = ctx.input*mask
-    output = (output+1)*127.5
+    #output = (output+1)*127.5
     image_bytes = io.BytesIO()
     img = PIL.Image.fromarray(output[0].astype(np.uint8))
     img.save(image_bytes, format='PNG')
