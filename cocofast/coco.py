@@ -89,7 +89,9 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
         elif params['loss'] == 'image':
             original = features * flabels
             predicted = features * mask
-            loss = tf.losses.absolute_difference(original, predicted)
+            loss_content = tf.losses.absolute_difference(original, predicted)
+            mask_loss = tf.losses.mean_squared_error(flabels, mask)
+            loss = (loss_content+mask_loss)*0.5
         else:
             loss = tf.losses.absolute_difference(flabels, mask)
         mse = tf.losses.mean_squared_error(flabels, mask)
