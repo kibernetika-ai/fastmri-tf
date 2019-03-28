@@ -27,11 +27,9 @@ def data_fn(params, training):
         def _read_images(a):
             img = tf.read_file(a[0])
             img = tf.image.decode_jpeg(img)
-            img = tf.reshape(img, [resolution, resolution, 3])
             mask = tf.read_file(a[1])
             mask = tf.image.decode_jpeg(mask)
             mask = mask[:, :, 0]
-            mask = tf.reshape(mask, [resolution, resolution, 1])
             img = tf.cast(img, dtype=tf.float32) / 255
             mask = tf.cast(mask, dtype=tf.int32) / 255
             return img, mask
@@ -42,12 +40,14 @@ def data_fn(params, training):
         ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
         if training:
             ds = ds.repeat(params['num_epochs']).prefetch(params['batch_size'])
-        if resolution != 320:
-            def _resize(a, b):
-                return tf.image.resize_bilinear(a, [resolution, resolution]), tf.image.resize_bilinear(b, [resolution,
-                                                                                                           resolution])
-
-            ds = ds.map(_resize)
+        def _resize(a, b):
+            if resolution!=320:
+                a = tf.image.resize_bilinear(a, [resolution, resolution])
+                b = tf.image.resize_bilinear(b, [resolution,resolution])
+                a = tf.reshape(a, [resolution, resolution, 3])
+                b = tf.reshape(b, [resolution, resolution, 1])
+                return  a,b
+        ds = ds.map(_resize)
         return ds
 
     return len(files) // params['batch_size'], _input_fn
