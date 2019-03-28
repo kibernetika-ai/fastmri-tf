@@ -12,34 +12,42 @@ import glob
 
 def data_fn(params, training):
     data_set = params['data_set']
-    files = glob.glob(data_set+'/masks/*.jpg')
+    files = glob.glob(data_set + '/masks/*.jpg')
     for i in range(len(files)):
         mask = files[i]
         img = os.path.basename(mask)
-        img = data_set+'/images/'+img
-        files[i] = [img,mask]
+        img = data_set + '/images/' + img
+        files[i] = [img, mask]
 
     resolution = params['resolution']
 
     def _input_fn():
         ds = tf.data.Dataset.from_tensor_slices(files)
+
         def _read_images(a):
             img = tf.read_file(a[0])
             img = tf.image.decode_jpeg(img)
-            img = tf.reshape(img,[resolution,resolution,3])
+            img = tf.reshape(img, [resolution, resolution, 3])
             mask = tf.read_file(a[1])
             mask = tf.image.decode_jpeg(mask)
-            mask = mask[:,:,0]
-            mask = tf.reshape(mask,[resolution,resolution,1])
-            img = tf.cast(img,dtype=tf.float32)/255
-            mask = tf.cast(mask,dtype=tf.int32)/255
-            return img,mask
+            mask = mask[:, :, 0]
+            mask = tf.reshape(mask, [resolution, resolution, 1])
+            img = tf.cast(img, dtype=tf.float32) / 255
+            mask = tf.cast(mask, dtype=tf.int32) / 255
+            return img, mask
+
         ds = ds.map(_read_images)
         if training:
             ds = ds.shuffle(params['batch_size'] * 2, reshuffle_each_iteration=True)
         ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
         if training:
             ds = ds.repeat(params['num_epochs']).prefetch(params['batch_size'])
+        if resolution != 320:
+            def _resize(a, b):
+                return tf.image.resize_bilinear(a, [resolution, resolution]), tf.image.resize_bilinear(b, [resolution,
+                                                                                                           resolution])
+
+            ds = ds.map(_resize)
         return ds
 
     return len(files) // params['batch_size'], _input_fn
@@ -51,12 +59,13 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
     else:
         features = tf.reshape(features, [params['batch_size'], params['resolution'], params['resolution'], 3])
     training = (mode == tf.estimator.ModeKeys.TRAIN)
-    out_chans = 2 if params['loss']=='entropy' else 1
-    logits = unet(features, out_chans, params['num_chans'], params['drop_prob'], params['num_pools'], training=training,unpool_layer=params['unpool'])
-    if params['loss']=='entropy':
-        mask = tf.cast(tf.argmax(logits, axis=3),tf.float32)
+    out_chans = 2 if params['loss'] == 'entropy' else 1
+    logits = unet(features, out_chans, params['num_chans'], params['drop_prob'], params['num_pools'], training=training,
+                  unpool_layer=params['unpool'])
+    if params['loss'] == 'entropy':
+        mask = tf.cast(tf.argmax(logits, axis=3), tf.float32)
         logging.info('Mask shape1: {}'.format(mask.shape))
-        mask = tf.expand_dims(mask,-1)
+        mask = tf.expand_dims(mask, -1)
         logging.info('Mask shape2: {}'.format(mask.shape))
     else:
         mask = tf.sigmoid(logits)
@@ -71,15 +80,15 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
         learning_rate_var = tf.Variable(float(params['lr']), trainable=False, name='lr',
                                         collections=[tf.GraphKeys.LOCAL_VARIABLES])
 
-        flabels = tf.cast(labels,tf.float32)
-        if params['loss']=='entropy':
+        flabels = tf.cast(labels, tf.float32)
+        if params['loss'] == 'entropy':
             llabels = tf.cast(labels, tf.int32)
             logits = tf.reshape(logits, [tf.shape(logits)[0], -1, 2])
             llabels = tf.reshape(llabels, [tf.shape(llabels)[0], -1])
             loss = tf.losses.sparse_softmax_cross_entropy(logits=logits, labels=llabels)
-        elif params['loss']=='image':
-            original = features*flabels
-            predicted = features*mask
+        elif params['loss'] == 'image':
+            original = features * flabels
+            predicted = features * mask
             loss = tf.losses.absolute_difference(original, predicted)
         else:
             loss = tf.losses.absolute_difference(flabels, mask)
@@ -102,19 +111,23 @@ def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=N
             chief_hooks = [board_hook]
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
-                if params['optimizer']=='AdamOptimizer':
+                if params['optimizer'] == 'AdamOptimizer':
                     opt = tf.train.AdamOptimizer(learning_rate_var)
                 else:
                     opt = tf.train.RMSPropOptimizer(learning_rate_var, params['weight_decay'])
                 train_op = opt.minimize(loss, global_step=global_step)
 
         tf.summary.image('Src', features, 3)
-        rimage = (mask - tf.reduce_min(mask))
-        rimage = rimage / tf.reduce_max(rimage)
-        tf.summary.image('Reconstruction', rimage, 3)
-        limage = (labels - tf.reduce_min(labels))
-        limage = limage / tf.reduce_max(limage)
-        tf.summary.image('Original', limage, 3)
+        if params['loss'] == 'image':
+            tf.summary.image('Reconstruction', predicted, 3)
+            tf.summary.image('Original', original, 3)
+        else:
+            rimage = (mask - tf.reduce_min(mask))
+            rimage = rimage / tf.reduce_max(rimage)
+            tf.summary.image('Reconstruction', rimage, 3)
+            limage = (labels - tf.reduce_min(labels))
+            limage = limage / tf.reduce_max(limage)
+            tf.summary.image('Original', limage, 3)
         hooks = [TrainingLearningRateHook(
             params['epoch_len'],
             learning_rate_var,
