@@ -27,7 +27,8 @@ def preprocess(inputs, ctx, **kwargs):
         if ctx.w > 1024:
             ctx.h *= int(1024.0 / float(ctx.w))
             ctx.w = 1024
-        else:
+    else:
+        if ctx.h > 1024:
             ctx.w *= int(1024.0 / float(ctx.h))
             ctx.h = 1024
     image = cv2.resize(image, (PARAMS['resolution'], PARAMS['resolution']))
@@ -53,6 +54,7 @@ def postprocess(outputs, ctx, **kwargs):
 
     output = output[0].astype(np.uint8)
     if output.shape[0] != ctx.h or output.shape[1] != ctx.w:
+        logging.info('Resize to {}'.format(ctx.h,ctx.w))
         output = cv2.resize(output, (ctx.w, ctx.h))
     _, buf = cv2.imencode('.png', output[:, :, ::-1])
     image = np.array(buf).tostring()
