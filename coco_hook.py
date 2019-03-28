@@ -26,7 +26,7 @@ def postprocess(outputs, ctx, **kwargs):
     output = ctx.input*mask
     output = (output+1)*127.5
     image_bytes = io.BytesIO()
-    img = PIL.Image.fromarray(output.astype(np.uint8))
+    img = PIL.Image.fromarray(output[0].astype(np.uint8))
     img.save(image_bytes, format='PNG')
     return {
         'output': image_bytes.getvalue(),
