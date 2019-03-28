@@ -1,16 +1,13 @@
 import tensorflow as tf
 import os
 from models.unet import unet
-import numpy as np
 import logging
-import json
 from kibernetika.rpt import MlBoardReporter
 from tensorflow.python.training import session_run_hook
 from tensorflow.python.training import training_util
 from tensorflow.python.training.session_run_hook import SessionRunArgs
 import math
 import glob
-import cv2
 
 
 def data_fn(params, training):
@@ -49,7 +46,10 @@ def data_fn(params, training):
 
 
 def _unet_model_fn(features, labels, mode, params=None, config=None, model_dir=None):
-    features = tf.reshape(features, [params['batch_size'], params['resolution'], params['resolution'], 3])
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        features = features['image']
+    else:
+        features = tf.reshape(features, [params['batch_size'], params['resolution'], params['resolution'], 3])
     training = (mode == tf.estimator.ModeKeys.TRAIN)
     out_chans = 2 if params['loss']=='entropy' else 1
     logits = unet(features, out_chans, params['num_chans'], params['drop_prob'], params['num_pools'], training=training,unpool_layer=params['unpool'])

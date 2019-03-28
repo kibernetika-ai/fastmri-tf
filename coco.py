@@ -13,6 +13,29 @@ import time
 from kibernetika.kibernetika_utils import klclient
 
 
+def export(checkpoint_dir, params):
+    if os.environ.get('TRAINING_DIR', '') != '' and os.environ.get('BASE_TASK_BUILD_ID', '') != '':
+        checkpoint_dir = os.environ['TRAINING_DIR'] + '/' + os.environ['BASE_TASK_BUILD_ID']
+    conf = tf.estimator.RunConfig(
+        model_dir=checkpoint_dir,
+    )
+    feature_placeholders = {
+        'image': tf.placeholder(tf.float32, [-1, params['resolution'], params['resolution'], 3], name='image'),
+    }
+    receiver = tf.estimator.export.build_raw_serving_input_receiver_fn(feature_placeholders, default_batch_size=-1)
+    net = CocoUnet(
+        params=params,
+        model_dir=checkpoint_dir,
+        config=conf,
+    )
+    export_path = net.export_savedmodel(
+        checkpoint_dir,
+        receiver,
+    )
+    export_path = export_path.decode("utf-8")
+    klclient.update_task_info({'model_path': export_path})
+
+
 def train(mode, checkpoint_dir, params):
     logging.info("start build  model")
 
@@ -78,11 +101,13 @@ def main(args):
         'use_seed': False,
         'resolution': args.resolution,
         'data_set': args.data_set,
-        'limit':args.limit,
-        'unpool':args.unpool,
-        'optimizer':args.optimizer,
-        'loss':args.loss,
+        'limit': args.limit,
+        'unpool': args.unpool,
+        'optimizer': args.optimizer,
+        'loss': args.loss,
     }
+    if args.export:
+        export(args.checkpoint_dir, params)
     if not tf.gfile.Exists(args.checkpoint_dir):
         tf.gfile.MakeDirs(args.checkpoint_dir)
     if args.worker:
