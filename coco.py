@@ -19,10 +19,11 @@ def export(checkpoint_dir, params):
     conf = tf.estimator.RunConfig(
         model_dir=checkpoint_dir,
     )
+    params['batch_size']=1
     feature_placeholders = {
-        'image': tf.placeholder(tf.float32, [-1, params['resolution'], params['resolution'], 3], name='image'),
+        'image': tf.placeholder(tf.float32, [1, params['resolution'], params['resolution'], 3], name='image'),
     }
-    receiver = tf.estimator.export.build_raw_serving_input_receiver_fn(feature_placeholders, default_batch_size=-1)
+    receiver = tf.estimator.export.build_raw_serving_input_receiver_fn(feature_placeholders)
     net = CocoUnet(
         params=params,
         model_dir=checkpoint_dir,
