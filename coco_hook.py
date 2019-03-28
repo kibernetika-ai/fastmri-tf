@@ -23,6 +23,8 @@ def preprocess(inputs,ctx, **kwargs):
 
 def postprocess(outputs, ctx, **kwargs):
     mask = outputs['output']
+    logging.info('Mask shape {}'.format(mask.shape))
+    mask[np.greater(mask,128)]=1
     output = ctx.input*mask
     output = (output+1)*127.5
     image_bytes = io.BytesIO()
