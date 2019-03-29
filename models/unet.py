@@ -1,7 +1,7 @@
 import tensorflow as tf
 import logging
 
-def conv_block(input, out_chans, drop_prob, name, pooling, training):
+def conv_block(input, out_chans, drop_prob, name, pooling, training,unpool_layer='deconv'):
     with tf.variable_scope("layer_{}".format(name)):
         out = input
         for j in range(2):
@@ -14,7 +14,14 @@ def conv_block(input, out_chans, drop_prob, name, pooling, training):
         if not pooling:
             return out
 
-        pool, pool_arg = tf.nn.max_pool_with_argmax(out,
+        if unpool_layer=='deconv':
+            pool = tf.nn.max_pool(out,
+                                  ksize=[1, 2, 2, 1],
+                                  strides=[1, 2, 2, 1],
+                                  padding='SAME', name='pool')
+            pool_arg = None
+        else:
+            pool, pool_arg = tf.nn.max_pool_with_argmax(out,
                                                     ksize=[1, 2, 2, 1],
                                                     strides=[1, 2, 2, 1],
                                                     padding='SAME', name='pool')
@@ -41,20 +48,20 @@ def unpool(pool, ind, ksize=[1, 2, 2, 1], name=None):
         return ret
 
 def unet(inputs, out_chans, chans, drop_prob, num_pool_layers,training=True,unpool_layer='unpool'):
-    output, pull = conv_block(inputs, chans, drop_prob, 'down_1', True, training)
+    output, pull = conv_block(inputs, chans, drop_prob, 'down_1', True, training,unpool_layer)
     logging.info('Down_1 - {}'.format(output.shape))
     down_sample_layers = [output]
     pull_args = [pull[1]]
     ch = chans
     for i in range(num_pool_layers - 1):
         ch *= 2
-        output, pull = conv_block(pull[0], ch, drop_prob, 'down_{}'.format(i + 2), True, training)
+        output, pull = conv_block(pull[0], ch, drop_prob, 'down_{}'.format(i + 2), True, training,unpool_layer)
         logging.info('Down_{} - {}'.format(i+2,output.shape))
         down_sample_layers += [output]
         pull_args += [pull[1]]
     i+=1
 
-    output = conv_block(pull[0], ch, drop_prob, 'down_{}'.format(i + 2), False, training)
+    output = conv_block(pull[0], ch, drop_prob, 'down_{}'.format(i + 2), False, training,unpool_layer)
     logging.info('Down_{} - {}'.format(i+2,output.shape))
 
     for i in range(num_pool_layers):
@@ -74,7 +81,7 @@ def unet(inputs, out_chans, chans, drop_prob, num_pool_layers,training=True,unpo
         logging.info('Up_{} - {}'.format(i+1,output.shape))
         if i < (num_pool_layers-1):
             ch //= 2
-        output = conv_block(output, ch, drop_prob, 'up_{}'.format(i + 1), False, training)
+        output = conv_block(output, ch, drop_prob, 'up_{}'.format(i + 1), False, training,unpool_layer)
 
     i+=1
     #output = conv_block(output, ch, drop_prob, 'up_{}'.format(i + 1), False, training)
