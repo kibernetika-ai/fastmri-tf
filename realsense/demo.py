@@ -1,5 +1,4 @@
 import argparse
-import os
 
 import cv2
 import numpy as np
@@ -20,8 +19,6 @@ def main(args):
     config.enable_device_from_file(args.input, repeat_playback=True)
 
     # Configure the pipeline to stream the depth stream
-    w = 640
-    h = 360
     config.enable_stream(rs.stream.depth)
     config.enable_stream(rs.stream.color) #, 640, 480, rs.format.rgb8, 30)
     pipeline.start(config)
@@ -42,17 +39,18 @@ def main(args):
         # Convert depth_frame to numpy array to render image in opencv
         # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
         depth_frame = np.asanyarray(depth_frame.get_data())
-        color_image = np.asanyarray(color_frame.get_data())
+        color_frame = np.asanyarray(color_frame.get_data())
 
         depth_color_image = cv2.applyColorMap(
             cv2.convertScaleAbs(depth_frame, alpha=0.03), cv2.COLORMAP_JET
         )
 
         if depth_color_image.shape[0] >= 720:
-            size = (depth_color_image.shape[1] // 2, depth_color_image.shape[0] // 2)
+            size = (int(depth_color_image.shape[1] // 1.5), int(depth_color_image.shape[0] // 1.5))
             depth_color_image = cv2.resize(depth_color_image, size, interpolation=cv2.INTER_AREA)
 
-        if color_image.shape[0] != depth_color_image.shape[0]:
+        color_image = color_frame
+        if color_image.shape != depth_color_image.shape:
             color_image = cv2.resize(
                 color_image,
                 (depth_color_image.shape[1], depth_color_image.shape[0]),
@@ -71,8 +69,14 @@ def main(args):
             cv2.destroyAllWindows()
             break
         if key == 32:
-            __import__('ipdb').set_trace()
-            np.save()
+            # Resize color image to depth size
+            color_frame = cv2.resize(
+                color_frame,
+                (depth_frame.shape[1], depth_frame.shape[0]),
+                interpolation=cv2.INTER_AREA,
+            )
+            np.save('depth.npy', depth_frame)
+            np.save('color.npy', color_frame)
 
 
 if __name__ == '__main__':
