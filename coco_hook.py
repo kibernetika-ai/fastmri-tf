@@ -50,7 +50,8 @@ def postprocess(outputs, ctx, **kwargs):
     mask = mask[0]
     if mask.shape[0] != ctx.h or mask.shape[1] != ctx.w:
         mask = cv2.resize(mask, (ctx.w, ctx.h))
-    mask = np.expand_dims(mask,2)
+    if len(mask.shape)<3:
+        mask = np.expand_dims(mask,2)
     output = ctx.input * mask
     output = output.astype(np.uint8)
     output = output[:, :, ::-1]
