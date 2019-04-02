@@ -21,23 +21,29 @@ def main(args):
     # Configure the pipeline to stream the depth stream
     config.enable_stream(rs.stream.depth)
     config.enable_stream(rs.stream.color) #, 640, 480, rs.format.rgb8, 30)
-    pipeline.start(config)
+    profile = pipeline.start(config)
+
+    # Getting the depth sensor's depth scale (see rs-align example for explanation)
+    depth_sensor = profile.get_device().first_depth_sensor()
+    depth_scale = depth_sensor.get_depth_scale()
+    print("Depth Scale is: ", depth_scale)
+
+    align_to = rs.stream.color
+    align = rs.align(align_to)
 
     # Create opencv window to render image in
     cv2.namedWindow("Video", cv2.WINDOW_AUTOSIZE)
 
     while True:
-        # Create a pipeline object. This object configures
-        # the streaming camera and owns it's handle
         frames = pipeline.wait_for_frames()
-        depth_frame = frames.get_depth_frame()
-        color_frame = frames.get_color_frame()
 
-        # Colorize depth frame to jet colormap
-        # depth_color_frame = rs.colorizer().colorize(depth_frame)
+        # Align the depth frame to color frame
+        aligned_frames = align.process(frames)
 
-        # Convert depth_frame to numpy array to render image in opencv
-        # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
+        # Get aligned frames
+        depth_frame = aligned_frames.get_depth_frame()  # aligned_depth_frame is a 640x480 depth image
+        color_frame = aligned_frames.get_color_frame()
+
         depth_frame = np.asanyarray(depth_frame.get_data())
         color_frame = np.asanyarray(color_frame.get_data())
 
@@ -45,20 +51,8 @@ def main(args):
             cv2.convertScaleAbs(depth_frame, alpha=0.03), cv2.COLORMAP_JET
         )
 
-        if depth_color_image.shape[0] >= 720:
-            size = (int(depth_color_image.shape[1] // 1.5), int(depth_color_image.shape[0] // 1.5))
-            depth_color_image = cv2.resize(depth_color_image, size, interpolation=cv2.INTER_AREA)
-
         color_image = color_frame
-        if color_image.shape != depth_color_image.shape:
-            color_image = cv2.resize(
-                color_image,
-                (depth_color_image.shape[1], depth_color_image.shape[0]),
-                interpolation=cv2.INTER_AREA,
-            )
-
         images = np.vstack((color_image, depth_color_image))
-        # images = color_image
 
         # Render image in opencv window
         cv2.imshow("Video", images)
@@ -70,13 +64,8 @@ def main(args):
             break
         if key == 32:
             # Resize color image to depth size
-            color_frame = cv2.resize(
-                color_frame,
-                (depth_frame.shape[1], depth_frame.shape[0]),
-                interpolation=cv2.INTER_AREA,
-            )
-            np.save('depth.npy', depth_frame)
-            np.save('color.npy', color_frame)
+            np.save('image_depth.npy', depth_frame)
+            np.save('image_color.npy', color_frame)
 
 
 if __name__ == '__main__':
