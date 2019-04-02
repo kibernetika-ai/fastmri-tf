@@ -53,7 +53,11 @@ def postprocess(outputs, ctx, **kwargs):
     mask = np.expand_dims(mask,2)
     output = ctx.input * mask
     output = output.astype(np.uint8)
-    _, buf = cv2.imencode('.png', output[:, :, ::-1])
+    output = output[:, :, ::-1]
+    logging.info('Out max {}'.format(np.max(output)))
+    logging.info('Out mit {}'.format(np.min(output)))
+    logging.info('Out shape {}'.format(output.shape))
+    _, buf = cv2.imencode('.png', output)
     image = np.array(buf).tostring()
     return {
         'output': image,
