@@ -61,6 +61,7 @@ def main():
     width,height = get_size(args.size)
     back = cv2.imread('./newback.jpg')[:, :, ::-1]
     back = cv2.resize(back,(width,height))
+    # back = np.full([height, width, 1], 100)
     back = back.astype(np.float32)
     try:
         while True:
