@@ -114,8 +114,11 @@ def process_frame(serving, frame, depth_frame, threshold, background, use_realse
         y = center[1]
         depth = depth_frame[x][y]
         max_depth = depth * threshold
+        min_depth = depth
         # Drop pixels which have depth more than foreground * threshold
         mask_2d[depth_frame >= max_depth] = 0
+        # Accept pixels which have depth less
+        # mask_2d[depth_frame <= min_depth] = 1
 
         mask_3d = mask_2d.reshape(mask.shape[0], mask.shape[1], 1)
         show_frame = frame * mask_3d + background * (1 - mask_3d)
