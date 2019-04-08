@@ -52,6 +52,7 @@ def main(args):
         )
 
         color_image = color_frame
+        color_image = color_image[:, :, ::-1]
         images = np.vstack((color_image, depth_color_image))
 
         # Render image in opencv window
