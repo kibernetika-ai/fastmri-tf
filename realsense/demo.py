@@ -48,7 +48,7 @@ def main(args):
         color_frame = np.asanyarray(color_frame.get_data())
 
         depth_color_image = cv2.applyColorMap(
-            cv2.convertScaleAbs(depth_frame, alpha=0.03), cv2.COLORMAP_JET
+            cv2.convertScaleAbs(depth_frame, alpha=0.08), cv2.COLORMAP_JET
         )
 
         color_image = color_frame

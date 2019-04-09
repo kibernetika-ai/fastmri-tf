@@ -26,7 +26,7 @@ def main(args):
     serving.load_model(args.model)
 
     gray = 55
-    threshold = 1.25
+    offset = 500
     back = None
 
     pipeline = rs.pipeline()
@@ -61,6 +61,9 @@ def main(args):
         color_frame = aligned_frames.get_color_frame()
 
         depth_frame = np.asanyarray(depth_frame.get_data())
+        # depth_color_image = cv2.applyColorMap(
+        #     cv2.convertScaleAbs(depth_frame, alpha=0.08), cv2.COLORMAP_JET
+        # )
         color_frame = np.asanyarray(color_frame.get_data())
 
         color_frame = color_frame[:, :, ::-1]
@@ -72,7 +75,7 @@ def main(args):
             serving,
             color_frame,
             depth_frame,
-            threshold,
+            offset,
             back,
             use_realsense=use_realsense
         )
@@ -90,14 +93,14 @@ def main(args):
         if key == 32:
             use_realsense = not use_realsense
         if key in {ord('+'), ord('=')}:
-            threshold += 0.025
-            print(threshold)
+            offset += 50
+            print(offset)
         if key in {ord('-'), ord('_')}:
-            threshold -= 0.025
-            print(threshold)
+            offset -= 50
+            print(offset)
 
 
-def process_frame(serving, frame, depth_frame, threshold, background, use_realsense=False):
+def process_frame(serving, frame, depth_frame, offset, background, use_realsense=False):
     frame = frame.astype(np.float32)
     inputs = cv2.resize(frame, (160, 160))
     inputs = np.asarray(inputs, np.float32) / 255.0
@@ -108,21 +111,28 @@ def process_frame(serving, frame, depth_frame, threshold, background, use_realse
     mask = np.expand_dims(mask, 2)
 
     if use_realsense:
+        # __import__('ipdb').set_trace()
         mask_2d = np.copy(mask).reshape(mask.shape[0], mask.shape[1])
         center = np.round(ndimage.measurements.center_of_mass(mask_2d)).astype(np.int)
         x = center[0]
         y = center[1]
         depth = depth_frame[x][y]
-        max_depth = depth * threshold
-        min_depth = depth
+        max_depth = depth + offset
+        min_depth = depth + offset // 4
         # Drop pixels which have depth more than foreground * threshold
         mask_2d[depth_frame >= max_depth] = 0
         # Accept pixels which have depth less
-        # mask_2d[depth_frame <= min_depth] = 1
+        mask_2d[(depth_frame <= min_depth) & (depth_frame > 0)] = 1
 
         mask_3d = mask_2d.reshape(mask.shape[0], mask.shape[1], 1)
         show_frame = frame * mask_3d + background * (1 - mask_3d)
         show_frame = np.ascontiguousarray(show_frame, np.uint8)
+
+        cv2.rectangle(
+            show_frame,
+            (center[1]-2, center[0]-2), (center[1]+2, center[0]+2),
+            color=(0, 255, 0), thickness=2,
+        )
     else:
         show_frame = frame * mask + background * (1 - mask)
         show_frame = np.ascontiguousarray(show_frame, np.uint8)
