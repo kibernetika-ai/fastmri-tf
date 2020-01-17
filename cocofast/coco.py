@@ -12,7 +12,7 @@ import glob
 
 def data_fn(params, training):
     data_set = params['data_set']
-    files = glob.glob(data_set + '/masks/*.jpg')
+    files = glob.glob(data_set + '/masks/*.*')
     for i in range(len(files)):
         mask = files[i]
         img = os.path.basename(mask)
@@ -26,9 +26,9 @@ def data_fn(params, training):
 
         def _read_images(a):
             img = tf.read_file(a[0])
-            img = tf.image.decode_jpeg(img)
+            img = tf.image.decode_imagede(img)
             mask = tf.read_file(a[1])
-            mask = tf.image.decode_jpeg(mask)
+            mask = tf.image.decode_imagede(mask)
             mask = mask[:, :, 0]
             mask = tf.expand_dims(mask,-1)
             img = tf.cast(img, dtype=tf.float32) / 255
