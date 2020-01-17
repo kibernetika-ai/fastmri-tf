@@ -20,7 +20,7 @@ def data_fn(params, training):
         files[i] = [img, mask]
 
     resolution = params['resolution']
-
+    logging.info('Files: {}'.format(files))
     def _input_fn():
         ds = tf.data.Dataset.from_tensor_slices(files)
 
