@@ -26,9 +26,9 @@ def data_fn(params, training):
 
         def _read_images(a):
             img = tf.read_file(a[0])
-            img = tf.image.decode_imagede(img)
+            img = tf.image.decode_image(img)
             mask = tf.read_file(a[1])
-            mask = tf.image.decode_imagede(mask)
+            mask = tf.image.decode_image(mask)
             mask = mask[:, :, 0]
             mask = tf.expand_dims(mask,-1)
             img = tf.cast(img, dtype=tf.float32) / 255
