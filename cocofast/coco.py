@@ -38,9 +38,9 @@ def data_fn(params, training):
         ds = ds.map(_read_images)
         if training:
             ds = ds.shuffle(params['batch_size'] * 2, reshuffle_each_iteration=True)
-        ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
         if training:
-            ds = ds.repeat(params['num_epochs']).prefetch(params['batch_size'])
+            ds = ds.repeat(params['num_epochs'])
+        ds = ds.apply(tf.contrib.data.batch_and_drop_remainder(params['batch_size']))
         def _resize(a, b):
             if resolution!=320:
                 a = tf.image.resize_bilinear(a, [resolution, resolution])
