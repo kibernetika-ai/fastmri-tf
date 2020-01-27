@@ -24,7 +24,7 @@ class MyDataset(utils.Dataset):
     def load_data(self):
         self.add_class("generator", 1, "person")
         for i in range(len(self.files)):
-            self.add_image("generator",self.files[i], i)
+            self.add_image("generator",i,self.files[i])
 
     def load_image(self, image_id):
         name = self.files[image_id]
