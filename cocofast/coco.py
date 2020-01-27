@@ -32,7 +32,7 @@ def data_fn(params, training):
             mask = mask[:, :, 0]
             mask = tf.expand_dims(mask,-1)
             img = tf.cast(img, dtype=tf.float32) / 255
-            mask = tf.cast(mask, dtype=tf.int32) / 255
+            mask = tf.cast(mask, dtype=tf.float32) / 255
             return img, mask
 
         ds = ds.map(_read_images)
