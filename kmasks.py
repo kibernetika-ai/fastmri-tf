@@ -109,8 +109,8 @@ def create_arg_parser():
 
 
 if __name__ == '__main__':
-    parser = create_arg_parser()
-    args,checkpoint_dir = create_arg_parser().parse_args()
+    parser,checkpoint_dir = create_arg_parser()
+    args= parser.parse_args()
     logging.getLogger().setLevel('INFO')
     files = glob.glob(args.data_set + '/masks/*.*')
     train_files = []
