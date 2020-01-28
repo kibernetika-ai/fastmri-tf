@@ -67,7 +67,7 @@ class MyConfig(Config):
     IMAGE_MAX_DIM = 128
 
     # Use smaller anchors because our image and objects are small
-    RPN_ANCHOR_SCALES = (32, 64, 128)  # anchor side in pixels
+    RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)  # anchor side in pixels
 
     # Reduce training ROIs per image because the images are small and have
     # few objects. Aim to allow ROI sampling to pick 33% positive ROIs.
