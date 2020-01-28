@@ -27,6 +27,7 @@ class MyDataset(utils.Dataset):
             self.add_image("generator",i,self.files[i])
 
     def load_image(self, image_id):
+        logging.info('Request image {} from {}',image_id,len(self.files))
         name = self.files[image_id]
         img = cv2.imread(os.path.join(self.data_set, 'images', name))
         img = cv2.resize(img, (self.width, self.height))
