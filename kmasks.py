@@ -42,7 +42,7 @@ class MyDataset(utils.Dataset):
         img = img[:,:,0]
         img[img < 200] = 0
         img[img >= 200] = 1
-        return img.astype(np.bool), np.ones((1), np.int32)
+        return np.expand_dims(img.astype(np.bool),axis=2), np.ones((1), np.int32)
 
 
 class MyConfig(Config):
