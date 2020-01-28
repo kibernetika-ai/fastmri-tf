@@ -27,7 +27,6 @@ class MyDataset(utils.Dataset):
             self.add_image("generator",i,self.files[i])
 
     def load_image(self, image_id):
-        logging.info('Request image {} from {}',image_id,len(self.files))
         name = self.files[image_id]
         img = cv2.imread(os.path.join(self.data_set, 'images', name))
         img = cv2.resize(img, (self.width, self.height))
@@ -125,10 +124,8 @@ if __name__ == '__main__':
             validate_files.append(name)
 
     train_set = MyDataset(train_files,args.data_set,args.resolution,args.resolution)
-    train_set.load_data()
     train_set.prepare()
     val_set = MyDataset(validate_files,args.data_set,args.resolution,args.resolution)
-    val_set.load_data()
     val_set.prepare()
 
     config = MyConfig()
